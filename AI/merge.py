@@ -27,10 +27,166 @@ from pydub import AudioSegment
 from pydub.playback import play
 import time
 import keyboard
+from google import genai
+from google.genai import types
+import requests
+from murf import Murf
+
 
 from pynput import keyboard
+import os
+from dotenv import load_dotenv
+
+def femalePodCaster(text, output_filename="output_audio.wav"):
+    client = Murf(api_key=os.environ.get("MURF_API_KEY"))
+
+    response = client.text_to_speech.generate(
+        text = text,
+        voice_id = "en-US-natalie",
+        style = "Conversational",
+        multi_native_locale = "en-US"
+        )
+
+    try:
+        audio_response = requests.get(response.audio_file)
+        audio_response.raise_for_status()  # Raises an HTTPError for bad responses
+        
+        # Save the audio file
+        with open(output_filename, 'wb') as f:
+            f.write(audio_response.content)
+        
+        print(f"Audio file downloaded successfully as: {output_filename}")
+        return output_filename
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error downloading audio file: {e}")
+        return None
+    
+
+def malePodCaster(text, output_filename="output_audio.wav"):
+    client = Murf(api_key=os.environ.get("MURF_API_KEY"))
+
+    response = client.text_to_speech.generate(
+        text = text,
+        voice_id = "en-US-charles",
+        style = "Conversational",
+        multi_native_locale = "en-US"
+        )
+
+    try:
+        audio_response = requests.get(response.audio_file)
+        audio_response.raise_for_status()  # Raises an HTTPError for bad responses
+        
+        # Save the audio file
+        with open(output_filename, 'wb') as f:
+            f.write(audio_response.content)
+        
+        print(f"Audio file downloaded successfully as: {output_filename}")
+        return output_filename
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error downloading audio file: {e}")
+        return None
 
 stop = False
+
+load_dotenv()
+def reCast(read, unread, question):
+    global stop
+    client = genai.Client(
+        api_key=os.environ.get("GEMINI_API_KEY"),
+    )
+
+    model = "gemini-2.5-flash-preview-05-20"
+    contents = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part.from_text(text = f"""Read:{read}
+                                        UnRead:{unread}
+                                        question: {question}"""),
+            ],
+        ),
+    ]
+    generate_content_config = types.GenerateContentConfig(
+        response_mime_type="text/plain",
+        system_instruction=[
+            types.Part.from_text(text="""
+You are a helpful and creative podcast script editor.
+
+You will be given:
+
+The podcast script so far, split into two parts:
+
+Read: already spoken content,
+
+Unread: upcoming lines that will be spoken immediately after your segment.
+
+A listener question.
+
+Your task is to write a bridging script segment that fits naturally between the Read and Unread sections.
+
+Your output must:
+Begin after the last line of the Read section (but do not include or paraphrase that last line).
+
+Never repeat, rephrase, summarize, or echo any content from the Read or Unread sections.
+
+This includes facts, examples, phrases, definitions, or points that have already been or will be mentioned.
+
+If your segment includes anything the Unread section already covers, it will result in duplicate content - which is unacceptable.
+
+Answer or acknowledge the listener's question directly.
+
+If the Unread section already answers the question fully, say so briefly and then transition to the next part.
+
+Match the tone, voice, pacing, and speaker style of the existing podcast.
+
+Optionally add personality or insight, only if it doesn't create repetition.
+                                 
+Format your response as a script, with speaker labels (e.g., Speaker 1, Speaker 2) and natural podcast dialogue or monologue.
+
+CRITICAL RULE:
+This is not a summary or preview. Your segment must be unique. Any idea, phrase, or point already covered in either Read or Unread should be treated as off-limits.
+
+Keep it natural and concise:
+Do not over-explain. A short, direct, well-written segment is far better than unnecessary filler.
+"""),
+        ],
+    )
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=generate_content_config,
+    )
+
+    lines = response.text.split('\n')
+
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if not line:  # Skip empty lines
+            i += 1
+            continue
+            
+        if line.startswith("**Speaker 1:**"):
+            text = line.replace("**Speaker 1:**", "").strip()
+            downloaded_file = femalePodCaster(text, f"/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/questions/female_{i}.mp3")
+        elif line.startswith("**Speaker 2:**"):
+            text = line.replace("**Speaker 2:**", "").strip()
+            downloaded_file = malePodCaster(text, f"/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/questions/male_{i}.mp3")
+        
+        i += 1
+
+    stop= False
+    play_audio_clips_sequentially(response.text, "/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/questions")
+
+    directory_path = "/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/questions"
+    for i in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, i)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
 
 def on_press(key):
     print
@@ -45,39 +201,39 @@ def on_press(key):
 
 
 def splitter(i, script):
-    output = []
+    # output = []
     lines = script.split('\n')
-    # splitSpot = i + 1
-    # read = '\n'.join(lines[:splitSpot])
-    # unread = '\n'.join(lines[splitSpot:])
+    splitSpot = i + 1
+    read = '\n'.join(lines[:splitSpot])
+    unread = '\n'.join(lines[splitSpot:])
     
-    a = 0
-    while a < len(lines) and a < i:
-        line = lines[a].strip()
-        if not line:  # Skip empty lines
-            a += 1
-            continue
+    # a = 0
+    # while a < len(lines) and a < i:
+    #     line = lines[a].strip()
+    #     if not line:  # Skip empty lines
+    #         a += 1
+    #         continue
             
-        if line.startswith("**Speaker 1:**"):
-            text = line.replace("**Speaker 1:**", "").strip()
-            output.append({"female": text})
-        elif line.startswith("**Speaker 2:**"):
-            text = line.replace("**Speaker 2:**", "").strip()
-            output.append({"male": text})
+    #     if line.startswith("**Speaker 1:**"):
+    #         text = line.replace("**Speaker 1:**", "").strip()
+    #         output.append({"female": text})
+    #     elif line.startswith("**Speaker 2:**"):
+    #         text = line.replace("**Speaker 2:**", "").strip()
+    #         output.append({"male": text})
         
-        a += 1
-    # return read, unread
+    #     a += 1
+    return read, unread
     
     
 
-def play_audio_clips_sequentially(script):
+def play_audio_clips_sequentially(script, path):
     global stop
     listener = keyboard.Listener(on_press=on_press)
     listener.start()
     for i in range(60):
         try:
             # Play female voice clip if exists
-            female_file = f"/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/female_{i}.mp3"
+            female_file = f"{path}/female_{i}.mp3"
             audio_clip = AudioSegment.from_file(female_file)
             #print(f"Playing female_{i}.mp3")
             play(audio_clip)
@@ -87,7 +243,7 @@ def play_audio_clips_sequentially(script):
 
         try:
             # Play male voice clip if exists
-            male_file = f"/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/male_{i}.mp3"
+            male_file = f"{path}/male_{i}.mp3"
             audio_clip = AudioSegment.from_file(male_file)
             #print(f"Playing male_{i}.mp3")
             play(audio_clip)
@@ -97,9 +253,11 @@ def play_audio_clips_sequentially(script):
 
         if stop:
             read, unread = splitter(i, script)
-            print(read)
-            print(unread)
-            return
+            # print(read)
+            # print("_________________________________")
+            # print(unread)
+            reCast(read, unread, input("Enter a question to continue the script: "))
+            stop = False
 
     print("Finished playing all audio clips")
 
@@ -165,4 +323,4 @@ sample_script = """
 **Speaker 2:** Join us next time for more insights on "Leading the Way!"
     """
 
-play_audio_clips_sequentially(sample_script)
+play_audio_clips_sequentially(sample_script, "/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI/podcast")
