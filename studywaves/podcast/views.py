@@ -40,12 +40,14 @@ def index(request):
     
     all_files = []
     page_token = None
+    # Query for specific MIME types
     query = "mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType='application/msword' or mimeType='application/pdf'"
     while True:
         results = service.files().list(
             q=query,
             pageSize=100,
-            fields="nextPageToken, files(id, name, mimeType)",
+            fields="nextPageToken, files(id, name, mimeType, modifiedTime)", # Added modifiedTime
+            orderBy="modifiedTime desc",  # Sort by modifiedTime descending
             pageToken=page_token
         ).execute()
         all_files.extend(results.get('files', []))
@@ -53,25 +55,12 @@ def index(request):
         if not page_token:
             break
 
-    # sort files
-    pdf_files = []
-    word_files = []
-    gdoc_files = []
+    # The files are now sorted by modifiedTime by the API call
+    # The previous manual sorting by type is no longer needed if date is the primary sort key
+    # If secondary sorting by type is needed after date, further logic would be required here.
+    # For now, we assume date sort is sufficient.
 
-    for file in all_files:
-        mime_type = file.get('mimeType', '')
-        if mime_type == 'application/pdf':
-            pdf_files.append(file)
-        elif mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mime_type == 'application/msword':
-            word_files.append(file)
-        elif mime_type == 'application/vnd.google-apps.document':
-            gdoc_files.append(file)
-        # else:
-            # Optionally handle or log files that don't match expected types
-
-    sorted_files = pdf_files + word_files + gdoc_files
-
-    return render(request, 'podcast/index.html', {'files': sorted_files})
+    return render(request, 'podcast/index.html', {'files': all_files})
 
 @login_required
 def get_file_content(request, file_id):
