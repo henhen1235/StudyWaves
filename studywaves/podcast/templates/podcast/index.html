@@ -1,0 +1,8 @@
+<h1>Your Google Drive Files</h1>
+<ul>
+  {% for file in files %}
+    <li>{{ file.name }} (ID: {{ file.id }})</li>
+  {% empty %}
+    <li>No files found.</li>
+  {% endfor %}
+</ul>
