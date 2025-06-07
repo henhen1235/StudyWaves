@@ -20,19 +20,16 @@ def index(request):
     except UserSocialAuth.DoesNotExist:
         return redirect('social:begin', backend='google-oauth2')
 
-    # Check if refresh_token is available
     refresh_token = user_social.extra_data.get('refresh_token')
     if not refresh_token:
-        # Force re-authentication to get refresh token
-        # This will redirect the user to the Google consent screen again
         return redirect('social:begin', backend='google-oauth2')
 
     credentials = Credentials(
         token=user_social.extra_data['access_token'],
         refresh_token=refresh_token,
         token_uri='https://oauth2.googleapis.com/token',
-        client_id=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, # Use key from Django settings
-        client_secret=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, # Use secret from Django settings
+        client_id=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
+        client_secret=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET,
         scopes=['https://www.googleapis.com/auth/drive.readonly'],
     )
 
@@ -40,25 +37,19 @@ def index(request):
     
     all_files = []
     page_token = None
-    # Query for specific MIME types
     query = "mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType='application/msword' or mimeType='application/pdf'"
     while True:
         results = service.files().list(
             q=query,
             pageSize=100,
-            fields="nextPageToken, files(id, name, mimeType, modifiedTime)", # Added modifiedTime
-            orderBy="modifiedTime desc",  # Sort by modifiedTime descending
+            fields="nextPageToken, files(id, name, mimeType, modifiedTime)",
+            orderBy="modifiedTime desc",
             pageToken=page_token
         ).execute()
         all_files.extend(results.get('files', []))
         page_token = results.get('nextPageToken')
         if not page_token:
             break
-
-    # The files are now sorted by modifiedTime by the API call
-    # The previous manual sorting by type is no longer needed if date is the primary sort key
-    # If secondary sorting by type is needed after date, further logic would be required here.
-    # For now, we assume date sort is sufficient.
 
     return render(request, 'podcast/index.html', {'files': all_files})
 
@@ -74,16 +65,14 @@ def get_file_content(request, file_id):
 
     refresh_token = user_social.extra_data.get('refresh_token')
     if not refresh_token:
-        # It's an API endpoint, so redirecting might not be ideal.
-        # Return an error instructing the client to re-authenticate.
         return JsonResponse({'error': 'Missing refresh token. Please re-authenticate.', 'reauth_required': True}, status=401)
 
     credentials = Credentials(
         token=user_social.extra_data['access_token'],
         refresh_token=refresh_token,
         token_uri='https://oauth2.googleapis.com/token',
-        client_id=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY, # Use key from Django settings
-        client_secret=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET, # Use secret from Django settings
+        client_id=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
+        client_secret=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET,
         scopes=['https://www.googleapis.com/auth/drive.readonly'],
     )
 
@@ -94,7 +83,7 @@ def get_file_content(request, file_id):
         mime_type = file_metadata.get('mimeType', '')
         file_name = file_metadata.get('name', 'File')
 
-        if mime_type == 'application/vnd.google-apps.document':            # export as rich text
+        if mime_type == 'application/vnd.google-apps.document':
             request_export = service.files().export_media(fileId=file_id, mimeType='text/html')
             file_content_bytes = request_export.execute()
             content = file_content_bytes.decode('utf-8', errors='replace')
@@ -103,7 +92,6 @@ def get_file_content(request, file_id):
         elif mime_type == 'application/pdf':
             file_content_bytes = service.files().get_media(fileId=file_id).execute()
             try:
-                # encode pdf as base64 for pdf.js
                 pdf_base64 = base64.b64encode(file_content_bytes).decode('utf-8')
                 return JsonResponse({'name': file_name, 'content': pdf_base64, 'mimeType': mime_type, 'contentType': 'pdf'})
             except Exception as e:
@@ -141,7 +129,6 @@ def get_file_content(request, file_id):
                 return JsonResponse({'name': file_name, 'content': f'Error reading Word document: {str(e)}', 'mimeType': mime_type, 'contentType': 'text'})
 
         elif mime_type == 'application/msword':
-            # .doc files are more complex to parse, fallback to simple message
             return JsonResponse({'name': file_name, 'content': 'Legacy .doc files are not supported. Please convert to .docx format.', 'mimeType': mime_type, 'contentType': 'text'})
         
         else:
@@ -151,3 +138,7 @@ def get_file_content(request, file_id):
         return JsonResponse({'error': f'An API error occurred: {error.resp.status} - {error._get_reason()}'}, status=500)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+def audio_player(request):
+    
+    return render(request, 'podcast/audio_player.html')
