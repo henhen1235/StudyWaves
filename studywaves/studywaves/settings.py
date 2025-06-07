@@ -136,6 +136,17 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'email',
     'profile',
 ]
+
+# Request offline access to get refresh tokens
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
+    'access_type': 'offline',
+    'approval_prompt': 'force'  # Force approval prompt to ensure refresh token is issued
+}
+
+# Store refresh token in extra_data
+SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['refresh_token', 'expires_in']
+
+
 LOGIN_URL = '/auth/login/google-oauth2/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
