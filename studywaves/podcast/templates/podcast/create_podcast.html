@@ -1,9 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "podcast/base.html" %}
+{% load static %}
+
+{% block title %}Create Teaching Podcast{% endblock %}
+
+{% block content %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Teaching Podcast</title>
+    <title>Create Podcast</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <style>
@@ -14,19 +18,26 @@
             padding: 20px;
             line-height: 1.6;
         }
+
+
         h1 {
             color: #333;
             text-align: center;
         }
+        
         .form-container {
             background-color: #f9f9f9;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
+
         .form-group {
             margin-bottom: 15px;
         }
+
+
+
         label {
             display: block;
             margin-bottom: 5px;
@@ -51,17 +62,15 @@
         button:hover {
             background-color: #45a049;
         }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
+
         .google-drive-btn {
             background-color: #4285f4;
         }
-        .google-drive-btn:hover:not(:disabled) {
+        .google-drive-btn:hover {
             background-color: #3367d6;
         }
+
+
         .upload-options {
             display: flex;
             flex-direction: column;
@@ -73,6 +82,11 @@
             border-radius: 4px;
             background-color: white;
         }
+
+
+
+
+
         .selected-file {
             margin-top: 10px;
             padding: 10px;
@@ -91,105 +105,18 @@
             border-radius: 8px;
             white-space: pre-wrap;
         }
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 10% auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 700px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover {
-            color: black;
-        }
-        .list-group-item-glass {
-            padding: 10px;
-            margin: 5px 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .list-group-item-glass:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        .modal-loading-indicator {
-            text-align: center;
-            padding: 20px;
-        }
-        .file-icon {
-            width: 20px;
-            height: 20px;
-        }
-        .file-info {
-            flex-grow: 1;
-        }
-        .file-name {
-            font-weight: bold;
-        }
-        .file-size {
-            font-size: 12px;
-            color: #666;
-        }
-        .auth-status {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .auth-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .auth-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .debug-info {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 12px;
-            font-family: monospace;
-        }
     </style>
 </head>
-<body style="min-height: 100vh; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #581c87 50%, #be185d 75%, #dc2626 100%)">
+<body style="min-height: 100vh; min-width: 100vw !important; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #581c87 50%, #be185d 75%, #dc2626 100%);">
     <h1 style="color: white;">Create Podcast</h1>
 
-    <div class="form-container" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); color: rgba(255, 255, 255, 0.8)">
+    <div class="form-container" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); color: rgba(255, 255, 255, 0.8); width: 80% !important; justify-self: center !important;">
         <form id="podcastForm" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             
             <div class="form-group">
                 <label for="topic">Topic Title:</label>
-                <input type="text" id="topic" name="topic" required style="background: rgba(255, 255, 255, 0.2); color:white; max-width: 97.5% !important;">
+                <input type="text" id="topic" name="topic" required style="background: rgba(255, 255, 255, 0.2); color:white; max-width: 100% !important;">
             </div>
             <div class="form-group">
                 
@@ -204,39 +131,10 @@
                 <label>Upload Learning Material:</label>
                 <div class="upload-options" >
                     <div class="upload-option" style="background-color: rgba(255, 255, 255, 0.2); overflow:hidden;">
-                        <h4>Option 1: Upload from Computer</h4>
                         <input type="file" id="fileInput" name="file" style="max-width: 99%;">
-                        <small>Upload files from your computer (text, PDF, etc.)</small>
+                        <small>Upload file (text, PDF, etc.)</small>
                     </div>
                     
-                    <div class="upload-option">
-                        <h4>Option 2: Select from Google Drive</h4>
-                        
-                        <!-- Debug info -->
-                        <div id="debugInfo" class="debug-info">
-                            <strong>Debug Info:</strong><br>
-                            GAPI Loaded: <span id="gapiStatus">false</span><br>
-                            GIS Loaded: <span id="gisStatus">false</span><br>
-                            Access Token: <span id="tokenStatus">none</span><br>
-                            API Keys: <span id="apiKeyStatus">checking...</span>
-                        </div>
-                        
-                        <div id="authStatus" class="auth-status" style="display: none;"></div>
-                        <button type="button" id="googleDriveBtn" class="google-drive-btn" disabled>
-                            📁 Sign in to Google Drive
-                        </button>
-                        <button type="button" id="openPickerBtn" class="google-drive-btn" disabled>
-                            📂 Open Picker
-                        </button>
-                        <button type="button" id="signOutBtn" class="google-drive-btn" style="display: none; background-color: #dc3545;">
-                            🚪 Sign Out
-                        </button>
-                        <input type="hidden" id="googleDriveFileId" name="google_drive_file_id">
-                        <input type="hidden" id="googleDriveFileName" name="google_drive_file_name">
-                        <input type="hidden" id="googleDriveAccessToken" name="google_drive_access_token">
-                        <div id="selectedGoogleFile" class="selected-file" style="display: none;"></div>
-                        <small>Select files from your Google Drive</small>
-                    </div>
                 </div>
             </div>
             
@@ -249,363 +147,39 @@
         <div class="spinner"></div>
     </div>
     
-    <!-- Google Drive Modal -->
-    <div id="driveModal" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeDriveModal">&times;</span>
-            <h2>Select a file from Google Drive</h2>
-            <div id="driveModalLoading" class="modal-loading-indicator">Loading files...</div>
-            <div id="googleDriveFilesList"></div>
-        </div>
-    </div>
-
     <script>
-        // Google Drive API Configuration - YOU NEED TO REPLACE THESE!
-        const GOOGLE_API_KEY = 'AIzaSyCmKXw4xExuEwAf3wJzP4LrHNuetjwP0eA'; // Replace with your actual API key
-        const GOOGLE_CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com'; // Replace with your actual client ID
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
-        let gapi_loaded = false;
-        let gis_loaded = false;
-        let tokenClient;
-        let access_token = null;
 
-        // Debug function to update status
-        function updateDebugInfo() {
-            document.getElementById('gapiStatus').textContent = gapi_loaded;
-            document.getElementById('gisStatus').textContent = gis_loaded;
-            document.getElementById('tokenStatus').textContent = access_token ? 'present' : 'none';
-            
-            // Check if API keys are set
-            const apiKeySet = GOOGLE_API_KEY !== 'YOUR_API_KEY_HERE';
-            const clientIdSet = GOOGLE_CLIENT_ID !== 'YOUR_CLIENT_ID_HERE';
-            document.getElementById('apiKeyStatus').textContent = 
-                apiKeySet && clientIdSet ? 'configured' : 'MISSING - Please set API keys!';
-        }
 
-        // Initialize Google APIs
-        function gapiLoaded() {
-            console.log('GAPI loaded');
-            gapi.load('client', initializeGapiClient);
-            gapi_loaded = true;
-            updateDebugInfo();
-            maybeEnableButtons();
-        }
-
-        async function initializeGapiClient() {
-            console.log('Initializing GAPI client...');
-            try {
-                await gapi.client.init({
-                    apiKey: GOOGLE_API_KEY,
-                    discoveryDocs: [DISCOVERY_DOC],
-                });
-                console.log('GAPI client initialized successfully');
-            } catch (error) {
-                console.error('Error initializing GAPI client:', error);
-                updateAuthStatus(false, 'Error initializing Google API');
+        document.getElementById('fileInput').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                document.getElementById('googleDriveFileId').value = '';
+                document.getElementById('googleDriveFileName').value = '';
+                document.getElementById('selectedGoogleFile').style.display = 'none';
             }
-        }
-
-        function gisLoaded() {
-            console.log('GIS loaded');
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID,
-                    scope: SCOPES,
-                    callback: (resp) => {
-                        console.log('Token response:', resp);
-                        if (resp.error !== undefined) {
-                            console.error('Token error:', resp.error);
-                            updateAuthStatus(false, `Authentication error: ${resp.error}`);
-                            throw (resp);
-                        }
-                        access_token = resp.access_token;
-                        console.log('Access token received');
-                        updateAuthStatus(true);
-                        enablePickerButton();
-                        updateDebugInfo();
-                    },
-                });
-                gis_loaded = true;
-                updateDebugInfo();
-                maybeEnableButtons();
-                console.log('Token client initialized');
-            } catch (error) {
-                console.error('Error initializing token client:', error);
-                updateAuthStatus(false, 'Error initializing authentication');
-            }
-        }
-
-        function maybeEnableButtons() {
-            console.log('Checking if buttons can be enabled...', {gapi_loaded, gis_loaded});
-            if (gapi_loaded && gis_loaded) {
-                const apiKeySet = GOOGLE_API_KEY !== 'YOUR_API_KEY_HERE';
-                const clientIdSet = GOOGLE_CLIENT_ID !== 'YOUR_CLIENT_ID_HERE';
-                
-                if (apiKeySet && clientIdSet) {
-                    document.getElementById('googleDriveBtn').disabled = false;
-                    console.log('Sign in button enabled');
-                } else {
-                    updateAuthStatus(false, 'Please configure your Google API credentials in the JavaScript');
-                }
-            }
-        }
-
-        function enablePickerButton() {
-            console.log('Enabling picker button');
-            document.getElementById('openPickerBtn').disabled = false;
-            document.getElementById('googleDriveBtn').style.display = 'none';
-            document.getElementById('signOutBtn').style.display = 'inline-block';
-        }
-
-        function updateAuthStatus(isAuthenticated, message = '') {
-            const authStatus = document.getElementById('authStatus');
-            authStatus.style.display = 'block';
-            
-            if (isAuthenticated) {
-                authStatus.className = 'auth-status auth-success';
-                authStatus.textContent = '✅ Successfully connected to Google Drive';
-            } else {
-                authStatus.className = 'auth-status auth-error';
-                authStatus.textContent = message || '❌ Not connected to Google Drive';
-            }
-        }
-
-        // Handle Google Drive authentication
-        function handleAuthClick() {
-            console.log('Auth button clicked');
-            if (!tokenClient) {
-                console.error('Token client not initialized');
-                updateAuthStatus(false, 'Authentication not properly initialized');
-                return;
-            }
-            
-            try {
-                if (access_token === null) {
-                    console.log('Requesting new token with consent');
-                    tokenClient.requestAccessToken({prompt: 'consent'});
-                } else {
-                    console.log('Requesting token refresh');
-                    tokenClient.requestAccessToken({prompt: ''});
-                }
-            } catch (error) {
-                console.error('Error during authentication:', error);
-                updateAuthStatus(false, 'Authentication failed');
-            }
-        }
-
-        function handleSignoutClick() {
-            console.log('Sign out clicked');
-            if (access_token) {
-                google.accounts.oauth2.revoke(access_token);
-                access_token = null;
-                updateAuthStatus(false, 'Signed out from Google Drive');
-                document.getElementById('openPickerBtn').disabled = true;
-                document.getElementById('googleDriveBtn').style.display = 'inline-block';
-                document.getElementById('signOutBtn').style.display = 'none';
-                clearSelectedFile();
-                updateDebugInfo();
-            }
-        }
-
-        // Load Google Drive files
-        async function loadGoogleDriveFiles() {
-            console.log('Loading Google Drive files...');
-            try {
-                gapi.client.setToken({access_token: access_token});
-                
-                const response = await gapi.client.drive.files.list({
-                    pageSize: 50,
-                    fields: 'nextPageToken, files(id, name, mimeType, size, modifiedTime)',
-                    q: "trashed=false and (mimeType='application/pdf' or mimeType='text/plain' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType='application/msword' or mimeType='text/csv' or mimeType='application/vnd.ms-excel' or mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or mimeType='application/vnd.google-apps.document')"
-                });
-
-                console.log('Files loaded:', response.result.files);
-                return response.result.files;
-            } catch (err) {
-                console.error('Error loading Google Drive files:', err);
-                updateAuthStatus(false, 'Error loading files from Google Drive');
-                return [];
-            }
-        }
-
-        // Display files in modal
-        function displayFilesInModal(files) {
-            const filesList = document.getElementById('googleDriveFilesList');
-            const loading = document.getElementById('driveModalLoading');
-            
-            loading.style.display = 'none';
-            
-            if (files.length === 0) {
-                filesList.innerHTML = '<p>No compatible files found in your Google Drive. Supported formats: PDF, TXT, DOC, DOCX, CSV, XLS, XLSX, Google Docs</p>';
-                return;
-            }
-
-            filesList.innerHTML = files.map(file => {
-                const fileSize = file.size ? formatFileSize(parseInt(file.size)) : 'Unknown size';
-                const fileIcon = getFileIcon(file.mimeType);
-                const modifiedDate = new Date(file.modifiedTime).toLocaleDateString();
-                
-                return `
-                    <div class="list-group-item-glass" onclick="selectGoogleDriveFile('${file.id}', '${file.name.replace(/'/g, "\\'")}')">
-                        <div class="file-icon">${fileIcon}</div>
-                        <div class="file-info">
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-size">${fileSize} • Modified ${modifiedDate}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function getFileIcon(mimeType) {
-            switch(mimeType) {
-                case 'application/pdf': return '📄';
-                case 'text/plain': return '📝';
-                case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                case 'application/msword': return '📘';
-                case 'text/csv':
-                case 'application/vnd.ms-excel':
-                case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return '📊';
-                case 'application/vnd.google-apps.document': return '📃';
-                default: return '📄';
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // Select a file from Google Drive
-        function selectGoogleDriveFile(fileId, fileName) {
-            console.log('File selected:', fileName, fileId);
-            document.getElementById('googleDriveFileId').value = fileId;
-            document.getElementById('googleDriveFileName').value = fileName;
-            document.getElementById('googleDriveAccessToken').value = access_token;
-            
-            const selectedFileDiv = document.getElementById('selectedGoogleFile');
-            selectedFileDiv.innerHTML = `<strong>Selected:</strong> ${fileName}`;
-            selectedFileDiv.style.display = 'block';
-            
-            // Clear the local file input
-            document.getElementById('fileInput').value = '';
-            
-            // Close the modal
-            document.getElementById('driveModal').style.display = 'none';
-        }
-
-        function clearSelectedFile() {
-            document.getElementById('googleDriveFileId').value = '';
-            document.getElementById('googleDriveFileName').value = '';
-            document.getElementById('googleDriveAccessToken').value = '';
-            document.getElementById('selectedGoogleFile').style.display = 'none';
-        }
-
-        // Open Google Drive picker modal
-        async function openGoogleDrivePicker() {
-            console.log('Opening Google Drive picker...');
-            if (!access_token) {
-                alert('Please sign in to Google Drive first');
-                return;
-            }
-            
-            const modal = document.getElementById('driveModal');
-            const loading = document.getElementById('driveModalLoading');
-            const filesList = document.getElementById('googleDriveFilesList');
-            
-            modal.style.display = 'block';
-            loading.style.display = 'block';
-            filesList.innerHTML = '';
-            
-            const files = await loadGoogleDriveFiles();
-            displayFilesInModal(files);
-        }
-
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, setting up event listeners...');
-            
-            // Update debug info initially
-            updateDebugInfo();
-            
-            // Duration slider
-            const durationSlider = document.getElementById('duration');
-            const durationValue = document.getElementById('durationValue');
-            
-            durationSlider.addEventListener('input', function() {
-                durationValue.textContent = this.value;
-            });
-
-            // Google Drive buttons
-            document.getElementById('googleDriveBtn').addEventListener('click', handleAuthClick);
-            document.getElementById('signOutBtn').addEventListener('click', handleSignoutClick);
-            document.getElementById('openPickerBtn').addEventListener('click', openGoogleDrivePicker);
-
-            // Modal close
-            document.getElementById('closeDriveModal').addEventListener('click', function() {
-                document.getElementById('driveModal').style.display = 'none';
-            });
-
-            // Close modal when clicking outside
-            window.addEventListener('click', function(event) {
-                const modal = document.getElementById('driveModal');
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-
-            // Form submission
-            document.getElementById('podcastForm').addEventListener('submit', function(e) {
-                const fileInput = document.getElementById('fileInput');
-                const googleDriveFileId = document.getElementById('googleDriveFileId').value;
-                
-                if (!fileInput.files.length && !googleDriveFileId) {
-                    e.preventDefault();
-                    alert('Please select a file either from your computer or Google Drive');
-                    return;
-                }
-                
-                document.getElementById('loading').style.display = 'block';
-            });
-
-            // File input change - clear Google Drive selection
-            document.getElementById('fileInput').addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    clearSelectedFile();
-                }
-            });
         });
 
-        // Load Google APIs when the page loads
-        function initGoogleApis() {
-            console.log('Initializing Google APIs...');
+        document.getElementById('podcastForm').addEventListener('submit', function(e) {
+            const localFile = document.getElementById('fileInput').files.length > 0;
             
-            // Load GAPI
-            if (typeof gapi !== 'undefined') {
-                gapiLoaded();
-            } else {
-                console.error('GAPI not loaded');
+            if (!localFile && !googleFile) {
+                e.preventDefault();
+                alert('Please select a file either from your computer or Google Drive.');
+                return;
             }
             
-            // Load GIS
-            if (typeof google !== 'undefined' && google.accounts) {
-                gisLoaded();
-            } else {
-                console.error('Google Identity Services not loaded');
-            }
-        }
-
-        // Initialize when page loads
-        window.addEventListener('load', function() {
-            console.log('Page loaded, initializing APIs...');
-            // Small delay to ensure scripts are fully loaded
-            setTimeout(initGoogleApis, 100);
+            document.getElementById('loading').style.display = 'block';
         });
+
+        const input = document.querySelector("#duration");
+        const durationValue = document.querySelector("#durationValue");
+
+        input.addEventListener("input", function() {
+            durationValue.textContent = input.value;
+        });
+
+
     </script>
 </body>
 </html>
+{% endblock %}

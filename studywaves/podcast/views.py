@@ -158,7 +158,7 @@ def audio_player(request, podcast_id):
     podcast = get_object_or_404(Podcast, id=podcast_id)
     
     segments = list(Segment.objects.filter(podcast=podcast).values_list('path', flat=True))
-    
+    print(segments)
     def extract_number(path):
         filename = path.split('/')[-1]
         if 'male_' in filename:
