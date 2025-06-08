@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text2Podcast</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #f5f7fa, #c3cfe2);
+      color: #1a1a1a;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      font-size: 1rem;
+      resize: vertical;
+    }
+    .submit-btn {
+      margin-top: 20px;
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover {
+      background-color: #45a049;
+    }
+    .or-divider {
+      margin: 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #aaa;
+      margin: 0 10px;
+    }
+    .google-drive-btn {
+      background-color: #4285f4;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .google-drive-btn:hover {
+      background-color: #357ae8;
+    }
+    .footer {
+      margin-top: 60px;
+      font-size: 0.9rem;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Turn Text into Podcasts</h1>
+    <p>Paste your text or upload a document from Google Drive and get a podcast in seconds.</p>
+
+    <textarea id="podcastText" placeholder="Paste your script or write your story here..."></textarea>
+    <button class="submit-btn" onclick="submitText()">🎧 Generate Podcast</button>
+
+    <div class="or-divider">or</div>
+
+    <button class="google-drive-btn">📂 Import from Google Drive</button>
+
+    <div class="footer">
+      <p>Made with ❤️ to amplify your words</p>
+    </div>
+  </div>
+
+  <script>
+    function submitText() {
+        const text = document.getElementById('podcastText').value;
+
+        fetch('/generate-podcast/', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({ text: text }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert("Response: " + JSON.stringify(data));
+        })
+        .catch(error => {
+            alert("Error: " + error);
+        });
+        }
+
+        function getCSRFToken() {
+        const name = 'csrftoken';
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [key, value] = cookie.trim().split('=');
+            if (key === name) return value;
+        }
+        return '';
+        }
+  </script>
+</body>
+</html>

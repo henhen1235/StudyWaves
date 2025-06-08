@@ -1,0 +1,363 @@
+{% extends 'flashcards/base.html' %}
+
+{% block title %}Study: {{ flashcard_set.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #eef2f7;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .study-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        padding: 20px;
+        position: relative;
+    }
+
+    .flashcard-container {
+        position: relative;
+        width: 700px;
+        height: 400px;
+        max-width: 90vw;
+        max-height: 70vh;
+    }
+
+    .flashcard {
+        width: 100%;
+        height: 100%;
+        perspective: 1500px;
+        user-select: none;
+    }
+
+    .card-inner {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        text-align: center;
+        transition: transform 0.6s ease-out;
+        transform-style: preserve-3d;
+        cursor: pointer;
+        border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .flipped {
+        transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        border-radius: 16px;
+        box-sizing: border-box;
+        font-size: 1.8rem;
+        line-height: 1.5;
+        overflow-y: auto;
+        word-break: break-word;
+    }
+
+    .card-front {
+        background-color: white;
+        color: #333;
+    }
+
+    .card-back {
+        background-color: #4f46e5;
+        color: white;
+        transform: rotateY(180deg);
+    }
+
+    .arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 3rem;
+        color: #4f46e5;
+        background: white;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        z-index: 20;
+    }
+
+    .arrow:hover {
+        background: #f0f4ff;
+        transform: translateY(-50%) scale(1.05);
+    }
+
+    .left-arrow {
+        left: -80px;
+    }
+
+    .right-arrow {
+        right: -80px;
+    }
+
+    .study-header {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 10;
+        max-width: 80%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .study-footer {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 12px 20px;
+        border-radius: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .progress-container {
+        width: 120px;
+        height: 6px;
+        background: #e0e7ff;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: #4f46e5;
+        transition: width 0.3s;
+    }
+
+    @media (max-width: 800px) {
+        .flashcard-container {
+            width: 90%;
+            height: 60vh;
+        }
+
+        .card-front, .card-back {
+            font-size: 1.4rem;
+            padding: 25px;
+        }
+
+        .arrow {
+            width: 50px;
+            height: 50px;
+            font-size: 2rem;
+        }
+
+        .left-arrow {
+            left: -50px;
+        }
+
+        .right-arrow {
+            right: -50px;
+        }
+
+        .study-header {
+            font-size: 0.9rem;
+            padding: 8px 15px;
+        }
+    }
+
+    @media (max-width: 500px) {
+        .arrow {
+            width: 40px;
+            height: 40px;
+        }
+
+        .left-arrow {
+            left: -30px;
+        }
+
+        .right-arrow {
+            right: -30px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="study-container">
+    <div class="study-header">
+        <h5 class="mb-0">{{ flashcard_set.title }}</h5>
+    </div>
+
+    <div class="flashcard-container">
+        <button class="arrow left-arrow" onclick="prevCard()" aria-label="Previous card">‹</button>
+
+        <div class="flashcard" onclick="flipCard()">
+            <div class="card-inner" id="cardInner">
+                <div class="card-front" id="cardFront">
+                    Loading...
+                </div>
+                <div class="card-back" id="cardBack">
+                    Loading...
+                </div>
+            </div>
+        </div>
+
+        <button class="arrow right-arrow" onclick="nextCard()" aria-label="Next card">›</button>
+    </div>
+
+    <div class="study-footer">
+        <div class="progress-container">
+            <div class="progress-bar" id="studyProgress"></div>
+        </div>
+        <span id="cardCounter">1/1</span>
+        <button class="btn btn-sm btn-outline-secondary" onclick="shuffleCards()">Shuffle</button>
+        <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" class="btn btn-sm btn-outline-secondary">Exit</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize flashcards
+    const flashcardsData = {{ flashcards_json|safe }};
+    let cards = flashcardsData.map(card => ({
+        front: card.term,
+        back: card.definition
+    }));
+
+    let currentIndex = 0;
+    let flipped = false;
+    const cardFront = document.getElementById("cardFront");
+    const cardBack = document.getElementById("cardBack");
+    const cardInner = document.getElementById("cardInner");
+    const cardCounter = document.getElementById("cardCounter");
+    const progressBar = document.getElementById("studyProgress");
+
+    // Core functions
+    function updateCard() {
+        if (cards.length === 0) {
+            cardFront.textContent = "No flashcards available";
+            cardBack.textContent = "No flashcards available";
+            cardCounter.textContent = "0/0";
+            progressBar.style.width = "0%";
+            return;
+        }
+
+        cardFront.textContent = cards[currentIndex].front;
+        cardBack.textContent = cards[currentIndex].back;
+        if (flipped) cardInner.classList.add("flipped");
+        else cardInner.classList.remove("flipped");
+        
+        cardCounter.textContent = `${currentIndex + 1}/${cards.length}`;
+        progressBar.style.width = `${((currentIndex + 1) / cards.length) * 100}%`;
+    }
+
+    function flipCard() {
+        if (cards.length === 0) return;
+        flipped = !flipped;
+        cardInner.classList.toggle("flipped");
+    }
+
+    function nextCard() {
+        if (cards.length === 0) return;
+        currentIndex = (currentIndex + 1) % cards.length;
+        flipped = false;
+        updateCard();
+    }
+
+    function prevCard() {
+        if (cards.length === 0) return;
+        currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+        flipped = false;
+        updateCard();
+    }
+
+    function shuffleCards() {
+        if (cards.length === 0) return;
+        
+        // Fisher-Yates shuffle algorithm
+        for (let i = cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+        
+        currentIndex = 0;
+        flipped = false;
+        updateCard();
+        showToast("Cards shuffled!");
+    }
+
+    // Helper function for notifications
+    function showToast(message) {
+        const toast = document.createElement("div");
+        toast.className = "position-fixed bottom-0 start-50 translate-middle-x mb-4 p-3 bg-dark text-white rounded";
+        toast.style.zIndex = "1000";
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add("fade");
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    // Touch events for mobile swipe
+    let touchStartX = 0;
+    const flashcardEl = document.querySelector('.flashcard');
+
+    flashcardEl.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    flashcardEl.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchEndX - touchStartX;
+        
+        if (diff < -50) nextCard(); // Swipe left
+        if (diff > 50) prevCard();  // Swipe right
+    }, { passive: true });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        switch(e.key) {
+            case 'ArrowLeft': prevCard(); break;
+            case 'ArrowRight': nextCard(); break;
+            case ' ':
+            case 'Enter':
+                e.preventDefault();
+                flipCard();
+                break;
+            case 's':
+                shuffleCards();
+                break;
+        }
+    });
+
+    // Initialize
+    updateCard();
+</script>
+{% endblock %}

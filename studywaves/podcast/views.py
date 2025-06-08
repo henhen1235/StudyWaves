@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from social_django.models import UserSocialAuth
 from googleapiclient.discovery import build
@@ -20,9 +20,13 @@ import requests
 from pydub import AudioSegment
 from dotenv import load_dotenv
 from murf import Murf  # Import the Murf library
+from . models import Podcast, Segment  # Import your PodcastFile model
 
 
 load_dotenv()
+
+# Configure the Gemini API with your key
+genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 @login_required
 def index(request):
@@ -150,30 +154,36 @@ def get_file_content(request, file_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
-def audio_player(request):
-    directory = '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/podcast'
-    file_list = os.listdir(directory)
+def audio_player(request, podcast_id):
+    podcast = get_object_or_404(Podcast, id=podcast_id)
+    
+    # Get all segments for this podcast
+    segments = list(Segment.objects.filter(podcast=podcast).values_list('path', flat=True))
+    
+    # Sort segments by the number after 'male' or 'female'
+    def extract_number(path):
+        # Extract the filename from the path
+        filename = path.split('/')[-1]
+        # Extract the number after 'male_' or 'female_'
+        if 'male_' in filename:
+            return int(filename.split('male_')[1].split('.')[0])
+        elif 'female_' in filename:
+            return int(filename.split('female_')[1].split('.')[0])
+        return 0  # Default case
+    
+    # Sort segments by the extracted number
+    sorted_segments = sorted(segments, key=extract_number)
+    
+    # Pass the script to the template if needed
+    script = podcast.script
+    print(sorted_segments)
+    # Pass the segments directly to the template
+    return render(request, 'podcast/audio_player.html', {
+        'files': sorted_segments,
+        'podcast': podcast,
+        'script': script
+    })
 
-    valid_files = []
-
-    for filename in file_list:
-        if filename.startswith('male_') or filename.startswith('female_'):
-            parts = filename.split('_')
-            if len(parts) == 2 and parts[1].endswith('.mp3'):
-                number_part = parts[1][:-4]  # remove '.mp3'
-                if number_part.isdigit():
-                    number = int(number_part)
-                    valid_files.append((filename, number))
-
-    # Sort the files by number
-    for i in range(len(valid_files)):
-        for j in range(i + 1, len(valid_files)):
-            if valid_files[i][1] > valid_files[j][1]:
-                valid_files[i], valid_files[j] = valid_files[j], valid_files[i]
-
-    # Create the full static paths
-    output = [filename for filename, _ in valid_files]  # Only the filename, not the path
-    return render(request, 'podcast/audio_player.html', {'files': output})
 
 # Add this function to your views.py file
 # @csrf_exempt
@@ -427,3 +437,104 @@ def generate_male_voice(text, output_path):
                 silence = AudioSegment.silent(duration=3000)
                 silence.export(output_path, format="mp3")
             return False
+
+
+def createScript(prompts):
+    client = genai.Client(
+        api_key=os.environ.get("GOOGLE_API_KEY"),
+    )
+
+    model = "gemini-2.5-flash-preview-05-20"
+    contents = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part.from_text(text=prompts),
+            ],
+        ),
+    ]
+    generate_content_config = types.GenerateContentConfig(
+        response_mime_type="text/plain",
+        system_instruction=[
+            types.Part.from_text(text="""You are a podcast writer helping the user turn their notes and documents into an engaging and accurate podcast script between two people.
+Use the provided source material to write a script that sounds natural, conversational, and informative.
+You may summarize, restructure, and paraphrase content, but do not invent facts.
+Format the output like a real podcast script with speaker labels (e.g., Speaker 1, Speaker 2)."""),
+        ],
+    )
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=generate_content_config,
+    )
+    return response.text
+
+def create_podcast(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        # Get the uploaded file and topic
+        uploaded_file = request.FILES['file']
+        topic = request.POST.get('topic', 'General Topic')
+        duration = request.POST.get('duration', '3')
+        print(duration)
+        
+        try:
+            # Send the file directly to Gemini
+            model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
+            
+            # Create a prompt that instructs Gemini what to do with the file content
+            prompt = f"""    
+             You are a podcast writer helping the user turn their notes and documents into an engaging and accurate podcast script between two people.
+Use the provided source material ({topic}) to write a script that sounds natural, conversational, and informative.
+You may summarize, restructure, and paraphrase content, but do not invent facts.
+Format the output like a real podcast script with speaker labels (e.g., Speaker 1, Speaker 2). Keep each line up to two sentences long but you may have the same speaker multiple times in a row. Make the podcast around {duration} minutes long.
+
+            Use the content from the uploaded file as your source material.
+
+            Example output format:
+            **Speaker 1:** Hello and welcome to our podcast on {topic}. Today, we're going to explore...
+            **Speaker 2:** That's right! We'll be diving deep into the nuances of {topic} and discussing...
+            """
+
+            # Send the file content and prompt to Gemini
+            response = model.generate_content([
+                prompt,
+                {"mime_type": "text/plain", "data": uploaded_file.read()}
+            ])
+            
+            # Return the generated podcast script
+            podcast_script = response.text
+            
+            podcast = Podcast.objects.create(
+                title=topic,
+                script=podcast_script
+            )
+            podcast.save()
+            try:
+                os.mkdir('/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/podcasts/' + str(podcast.id))
+            except:
+                pass
+            print("Created podcast:", podcast.id)
+            
+            generate_audio_files(podcast_script, '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/podcasts/' + str(podcast.id))
+            print("Created podcast:", podcast.id)
+            files = os.listdir('/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/podcasts/' + str(podcast.id))
+            for file in files:
+                # Create the correct absolute path to the audio file
+                file_path = 'AI/podcasts/' + str(podcast.id) + '/' + file
+                # Create a new AudioSegment model instance
+                segment = Segment(
+                    podcast=podcast,
+                    path=file_path
+                )
+                segment.save()
+            return render(request, 'podcast/create_podcast.html', {
+                'podcast_script': podcast_script
+            })
+            
+        except Exception as e:
+            print(f"Error generating podcast: {e}")
+            error_message = f"Error generating podcast: {str(e)}"
+            return render(request, 'podcast/create_podcast.html', {'error': error_message})
+
+    # If not POST or no file, just show the form
+    return render(request, 'podcast/create_podcast.html')

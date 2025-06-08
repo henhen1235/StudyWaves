@@ -1,0 +1,71 @@
+<!-- flashcards/templates/flashcards/set_detail.html -->
+{% extends 'flashcards/base.html' %}
+
+{% block title %}{{ flashcard_set.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title">{{ flashcard_set.title }}</h1>
+                {% if flashcard_set.description %}
+                <p class="card-text text-muted">{{ flashcard_set.description }}</p>
+                {% endif %}
+                <p class="card-text">
+                    <small class="text-muted">
+                        Created by {{ flashcard_set.created_by.username }} on {{ flashcard_set.created_at|date:"M d, Y" }}
+                        • {{ total_cards }} cards
+                    </small>
+                </p>
+                
+                <div class="mt-3">
+                    <a href="{% url 'flashcards:study' flashcard_set.id %}" class="btn btn-primary btn-lg me-2">
+                        📖 Study Flashcards
+                    </a>
+                    {% if user == flashcard_set.created_by %}
+                    <a href="{% url 'flashcards:delete_set' flashcard_set.id %}" class="btn btn-outline-danger">
+                        🗑️ Delete Set
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Study Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="text-primary">{{ total_cards }}</h3>
+                    <p class="text-muted">Total Cards</p>
+                </div>
+                <hr>
+                <p class="mb-1"><strong>Last Updated:</strong></p>
+                <p class="text-muted">{{ flashcard_set.updated_at|date:"M d, Y g:i A" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if flashcards %}
+<div class="mt-4">
+    <h3>All Cards</h3>
+    <div class="row">
+        {% for flashcard in flashcards %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-primary">{{ flashcard.term }}</h6>
+                    <p class="card-text">{{ flashcard.definition }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -25,7 +25,11 @@
 
     h1 {
       margin-bottom: 40px;
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: 600;
+      text-transform: capitalize;
+      text-align: center;
+      color: #FFFFFF;
     }
 
     .player-container {
@@ -183,7 +187,7 @@
   </style>
 </head>
 <body>
-  <h1>StudyWaves</h1>
+  <h1>{{ podcast.title }}</h1>
   <div class="player-container">
     <audio id="audio"></audio>
 
@@ -224,7 +228,7 @@
     document.addEventListener('DOMContentLoaded', function() {
     const audioFiles = [
       {% for file in files %}
-        "{% static 'AI/podcast/' %}{{ file }}"{% if not forloop.last %},{% endif %}
+        "/static/{{ file }}"{% if not forloop.last %},{% endif %}
       {% endfor %}
     ];
 
@@ -251,16 +255,12 @@
     const cancelBtn = document.getElementById('cancelBtn');
     const loadingIndicator = document.getElementById('loadingIndicator');
 
-    // Load script content
-    async function loadScript() {
+    // Load script content from the Django template
+    function loadScript() {
       try {
-        const response = await fetch("{% static 'script.txt' %}");
-        if (response.ok) {
-          scriptContent = await response.text();
-          console.log("Script loaded successfully");
-        } else {
-          console.error("Failed to load script");
-        }
+        // Get script content passed from the Django view
+        scriptContent = `{{ script|escapejs }}`;
+        console.log("Script loaded successfully");
       } catch (error) {
         console.error("Error loading script:", error);
       }
@@ -282,7 +282,7 @@
     }
 
     async function initializePlayer() {
-      await loadScript();
+      loadScript();
       
       durations = [];
       timeOffsets = [0];
@@ -393,6 +393,7 @@
             'X-CSRFToken': getCookie('csrftoken')
           },
           body: JSON.stringify({
+            podcast_id: {{ podcast.id }},
             read: read,
             unread: unread,
             question: question

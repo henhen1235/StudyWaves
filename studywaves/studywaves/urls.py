@@ -22,4 +22,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("podcast.urls")),
     path("auth/", include("social_django.urls", namespace="social")),
+    path('flashcards/', include('flashcards.urls')),
 ]

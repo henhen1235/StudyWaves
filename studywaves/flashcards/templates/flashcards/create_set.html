@@ -1,0 +1,14 @@
+{% extends 'flashcards/base.html' %}
+
+{% block title %}Create New Flashcard Set{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Create New Flashcard Set</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Create Set</button>
+    </form>
+</div>
+{% endblock %}
