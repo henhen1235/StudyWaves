@@ -18,9 +18,8 @@ def femalePodCaster(text, output_filename="output_audio.wav"):
 
     try:
         audio_response = requests.get(response.audio_file)
-        audio_response.raise_for_status()  # Raises an HTTPError for bad responses
-        
-        # Save the audio file
+        audio_response.raise_for_status() 
+
         with open(output_filename, 'wb') as f:
             f.write(audio_response.content)
         
@@ -44,9 +43,8 @@ def malePodCaster(text, output_filename="output_audio.wav"):
 
     try:
         audio_response = requests.get(response.audio_file)
-        audio_response.raise_for_status()  # Raises an HTTPError for bad responses
-        
-        # Save the audio file
+        audio_response.raise_for_status()
+
         with open(output_filename, 'wb') as f:
             f.write(audio_response.content)
         
@@ -128,7 +126,7 @@ lines = sample_script.split('\n')
 i = 0
 while i < len(lines):
     line = lines[i].strip()
-    if not line:  # Skip empty lines
+    if not line:  
         i += 1
         continue
         
