@@ -86,10 +86,55 @@
             border-radius: 8px;
             white-space: pre-wrap;
         }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .list-group-item-glass {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .list-group-item-glass:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .modal-loading-indicator {
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body style="min-height: 100vh; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #581c87 50%, #be185d 75%, #dc2626 100%)">
-    <h1 style="color: white;">Create Teaching Podcast Script</h1>
+    <h1 style="color: white;">Create Podcast</h1>
 
     <div class="form-container" style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); color: rgba(255, 255, 255, 0.8)">
         <form id="podcastForm" method="post" enctype="multipart/form-data">
@@ -142,6 +187,16 @@
         <div class="spinner"></div>
     </div>
     
+    <!-- Google Drive Modal -->
+    <div id="driveModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeDriveModal">&times;</span>
+            <h2>Select a file from Google Drive</h2>
+            <div id="driveModalLoading" class="modal-loading-indicator">Loading files...</div>
+            <div id="googleDriveFilesList"></div>
+        </div>
+    </div>
+    
     <script>
         // Your Google API credentials
         const CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com';
@@ -152,10 +207,10 @@
         let gapiInited = false;
         let gisInited = false;
         let tokenClient;
+        let isSignedIn = false;
 
         // Initialize gapi for Drive API
         async function gapiLoaded() {
-            // No longer loading 'picker'
             await gapi.load('client', initializeGapiClient);
         }
 
@@ -182,7 +237,8 @@
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
                 document.getElementById('googleDriveBtn').disabled = false;
-                document.getElementById('openPickerBtn').disabled = false; // Enable the picker button too
+                // Only enable picker button if signed in
+                document.getElementById('openPickerBtn').disabled = !isSignedIn;
             }
         }
 
@@ -194,11 +250,19 @@
                     alert('Authentication failed. Please try again.');
                     return;
                 }
-                gapi.client.setToken({ access_token: response.access_token });
+                
+                // Store the token in gapi.client
+                gapi.client.setToken(response);
+                
+                // Update UI
                 document.getElementById('googleDriveBtn').innerHTML = '✅ Signed in to Google Drive';
                 document.getElementById('googleDriveBtn').disabled = true;
-                // Enable the button to open our custom modal
-                document.getElementById('openPickerBtn').disabled = false; 
+                
+                // Set signed in flag
+                isSignedIn = true;
+                
+                // Enable the picker button
+                document.getElementById('openPickerBtn').disabled = false;
             };
 
             if (gapi.client.getToken() === null) {
@@ -208,16 +272,33 @@
             }
         }
 
+        // Modal functions
+        function openDriveModal() {
+            document.getElementById('driveModal').style.display = 'block';
+        }
+
+        function closeDriveModal() {
+            document.getElementById('driveModal').style.display = 'none';
+        }
+
         // Open custom modal and fetch files
         async function openCustomDrivePicker() {
-            const token = gapi.client.getToken();
-            if (!token) {
-                alert('Please sign in to Google Drive first.');
-                // Optionally, trigger handleAuthClick() here or guide the user.
-                return;
+            try {
+                // Check if we have a token
+                const token = gapi.client.getToken();
+                if (!token || !token.access_token) {
+                    alert('Please sign in to Google Drive first.');
+                    handleAuthClick(); // Automatically trigger sign-in
+                    return;
+                }
+                
+                openDriveModal();
+                await fetchAndDisplayDriveFiles();
+            } catch (error) {
+                console.error('Error opening picker:', error);
+                alert('Error accessing Google Drive. Please sign in again.');
+                handleAuthClick(); // Try to re-authenticate
             }
-            openDriveModal(); // This function is in base.html
-            await fetchAndDisplayDriveFiles();
         }
 
         async function fetchAndDisplayDriveFiles() {
@@ -229,9 +310,9 @@
 
             try {
                 const response = await gapi.client.drive.files.list({
-                    // pageSize: 20, // Adjust as needed
+                    pageSize: 20,
                     fields: "nextPageToken, files(id, name, iconLink, mimeType)",
-                    // q: "mimeType='application/pdf' or mimeType='text/plain'", // Example: Filter by type
+                    q: "mimeType!='application/vnd.google-apps.folder'",
                     orderBy: "modifiedTime desc"
                 });
                 
@@ -239,19 +320,13 @@
                 const files = response.result.files;
                 if (files && files.length > 0) {
                     files.forEach(file => {
-                        // Exclude Google Workspace specific types like Google Docs, Sheets, Slides if you only want downloadable files
-                        // This is a simple check; more robust filtering might be needed based on your requirements
-                        if (!file.mimeType.startsWith('application/vnd.google-apps')) {
-                            const fileElement = document.createElement('div');
-                            fileElement.className = 'list-group-item-glass';
-                            fileElement.innerHTML = `<img src="${file.iconLink}" alt="icon"> ${file.name}`;
-                            fileElement.onclick = () => handleDriveFileSelect(file.id, file.name);
-                            filesListDiv.appendChild(fileElement);
-                        }
+                        // Create file element
+                        const fileElement = document.createElement('div');
+                        fileElement.className = 'list-group-item-glass';
+                        fileElement.innerHTML = `<img src="${file.iconLink}" alt="icon" width="20" height="20"> ${file.name}`;
+                        fileElement.onclick = () => handleDriveFileSelect(file.id, file.name);
+                        filesListDiv.appendChild(fileElement);
                     });
-                    if (filesListDiv.children.length === 0) {
-                         filesListDiv.innerHTML = '<div class="modal-loading-indicator">No suitable files found.</div>';
-                    }
                 } else {
                     filesListDiv.innerHTML = '<div class="modal-loading-indicator">No files found in your Google Drive.</div>';
                 }
@@ -259,7 +334,16 @@
                 console.error('Error fetching Google Drive files:', error);
                 loadingIndicator.style.display = 'none';
                 filesListDiv.innerHTML = '<div class="modal-loading-indicator">Error loading files. Please try again.</div>';
-                alert('Could not fetch files from Google Drive.');
+                
+                // If the error is due to authentication, prompt to sign in again
+                if (error.status === 401) {
+                    alert('Your session expired. Please sign in again.');
+                    isSignedIn = false;
+                    document.getElementById('googleDriveBtn').innerHTML = '📁 Sign in to Google Drive';
+                    document.getElementById('googleDriveBtn').disabled = false;
+                    document.getElementById('openPickerBtn').disabled = true;
+                    gapi.client.setToken(null);
+                }
             }
         }
 
@@ -274,17 +358,23 @@
             selectedFileDiv.style.display = 'block';
             
             document.getElementById('fileInput').value = ''; // Clear local file input
-            closeDriveModal(); // This function is in base.html
+            closeDriveModal();
         }
 
         // Event listeners
         document.getElementById('googleDriveBtn').addEventListener('click', handleAuthClick);
-        // The 'openPickerBtn' now triggers our custom modal flow
         document.getElementById('openPickerBtn').addEventListener('click', openCustomDrivePicker); 
+        document.getElementById('closeDriveModal').addEventListener('click', closeDriveModal);
         
-        document.getElementById('googleDriveBtn').disabled = true; 
-        document.getElementById('openPickerBtn').disabled = true; // Initially disable picker button until signed in
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === document.getElementById('driveModal')) {
+                closeDriveModal();
+            }
+        });
 
+        document.getElementById('googleDriveBtn').disabled = true; 
+        document.getElementById('openPickerBtn').disabled = true; // Initially disable picker button
 
         // Clear Google Drive selection when local file is selected
         document.getElementById('fileInput').addEventListener('change', function() {
@@ -321,7 +411,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Load GAPI
             if (typeof gapi !== 'undefined') {
-                gapiLoaded(); // Calls initializeGapiClient now
+                gapiLoaded();
             } else {
                 console.error('GAPI not loaded');
             }

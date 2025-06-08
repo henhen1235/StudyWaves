@@ -40,7 +40,6 @@
             color: var(--text-primary);
         }
 
-        /* Animated background orbs */
         body::before,
         body::after {
             content: '';
@@ -76,7 +75,6 @@
             75% { transform: translateY(-10px) translateX(20px) scale(1.02); }
         }
 
-        /* Glassmorphism base class */
         .glass {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -95,7 +93,6 @@
             transform: translateY(-2px);
         }
 
-        /* Navigation */
         .navbar {
             background: var(--glass-bg);
             backdrop-filter: blur(24px);
@@ -130,13 +127,11 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Main content container */
         .main-container {
             padding: 2rem 0;
             min-height: calc(100vh - 80px);
         }
 
-        /* Alert styling */
         .alert-glass {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -159,7 +154,6 @@
             border-left-color: var(--accent-blue);
         }
 
-        /* Buttons */
         .btn-glass {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -205,7 +199,6 @@
             border-radius: 8px;
         }
 
-        /* Form styling */
         .form-glass {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -241,7 +234,6 @@
             margin-bottom: 0.5rem;
         }
 
-        /* Responsive adjustments */
         @media (max-width: 768px) {
             .navbar-brand {
                 font-size: 1.25rem;
@@ -252,7 +244,6 @@
             }
         }
 
-        /* Loading animations */
         @keyframes shimmer {
             0% { background-position: -200px 0; }
             100% { background-position: calc(200px + 100%) 0; }

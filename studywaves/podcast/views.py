@@ -473,9 +473,7 @@ Format the output like a real podcast script with speaker labels (e.g., Speaker 
                     path=file_path
                 )
                 segment.save()
-            return render(request, 'podcast/create_podcast.html', {
-                'podcast_script': podcast_script
-            })
+            return redirect('flashcards:home')
             
         except Exception as e:
             print(f"Error generating podcast: {e}")
