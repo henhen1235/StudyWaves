@@ -9,8 +9,13 @@ from .forms import FlashcardSetForm
 from dotenv import load_dotenv
 import json
 import os
-from google import genai
-from google.genai import types
+# Replace these lines
+# from google import genai
+# from google.genai import types
+
+# With these lines
+import google.generativeai as genai
+from google.generativeai import types
 
 load_dotenv()
 

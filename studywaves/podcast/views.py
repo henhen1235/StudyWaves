@@ -45,7 +45,7 @@ def index(request):
         token_uri='https://oauth2.googleapis.com/token',
         client_id=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
         client_secret=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET,
-        scopes=['https://www.googleapis.com/auth/drive.readonly'],
+        scopes=['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/drive.metadata.readonly'],
     )
 
     service = build('drive', 'v3', credentials=credentials)
