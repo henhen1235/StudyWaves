@@ -26,7 +26,7 @@ import shutil
 
 load_dotenv()
 
-genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+genai.configure(api_key='AIzaSyBLeo8OrDunmh-GMiWj_GaAnBzocYKXe04')
 
 @login_required
 def index(request):

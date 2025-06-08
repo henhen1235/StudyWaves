@@ -5,21 +5,24 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Delete Flashcard Set</h5>
-                <p class="card-text">
-                    Are you sure you want to delete the flashcard set 
-                    <strong>"{{ flashcard_set.title }}"</strong>?
-                </p>
-                <p class="text-muted">This action cannot be undone.</p>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
-                    <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" class="btn btn-secondary">Cancel</a>
-                </form>
-            </div>
+        <div class="glass p-4 rounded-3 text-center">
+            <h4 class="mb-4 text-primary">Delete Flashcard Set</h4>
+            
+            <p class="mb-3 text-secondary">
+                Are you sure you want to delete the flashcard set 
+                <strong class="text-primary">"{{ flashcard_set.title }}"</strong>?
+            </p>
+            <p class="text-muted small mb-4">This action cannot be undone.</p>
+            
+            <form method="post" class="d-flex justify-content-center gap-3">
+                {% csrf_token %}
+                <button type="submit" class="btn-glass btn-glass-danger">
+                    <i class="fas fa-trash-alt me-2"></i>Yes, Delete
+                </button>
+                <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" class="btn-glass">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+            </form>
         </div>
     </div>
 </div>

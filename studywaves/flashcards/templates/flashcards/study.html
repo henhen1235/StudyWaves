@@ -4,20 +4,12 @@
 
 {% block extra_css %}
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        background: #eef2f7;
-        overflow: hidden;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
     .study-container {
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 100vh;
-        padding: 20px;
+        min-height: calc(100vh - 80px);
+        padding: 2rem;
         position: relative;
     }
 
@@ -26,7 +18,7 @@
         width: 700px;
         height: 400px;
         max-width: 90vw;
-        max-height: 70vh;
+        max-height: 60vh;
     }
 
     .flashcard {
@@ -41,12 +33,12 @@
         height: 100%;
         position: relative;
         text-align: center;
-        transition: transform 0.6s ease-out;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         transform-style: preserve-3d;
         cursor: pointer;
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        border-radius: var(--border-radius-lg);
     }
+
 
     .flipped {
         transform: rotateY(180deg);
@@ -60,8 +52,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 40px;
-        border-radius: 16px;
+        padding: 2.5rem;
+        border-radius: var(--border-radius-lg);
         box-sizing: border-box;
         font-size: 1.8rem;
         line-height: 1.5;
@@ -70,122 +62,133 @@
     }
 
     .card-front {
-        background-color: white;
-        color: #333;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
     }
 
     .card-back {
-        background-color: #4f46e5;
+        background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
         color: white;
         transform: rotateY(180deg);
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
     }
 
     .arrow {
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        font-size: 3rem;
-        color: #4f46e5;
-        background: white;
+        font-size: 2rem;
+        color: var(--text-primary);
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
         border-radius: 50%;
         width: 60px;
         height: 60px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: var(--glass-shadow);
         cursor: pointer;
         border: none;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 20;
     }
 
     .arrow:hover {
-        background: #f0f4ff;
-        transform: translateY(-50%) scale(1.05);
+        background: var(--glass-hover);
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: var(--glass-shadow-hover);
     }
 
     .left-arrow {
-        left: -80px;
+        left: -30px;
     }
 
     .right-arrow {
-        right: -80px;
+        right: -30px;
     }
 
     .study-header {
         position: absolute;
-        top: 20px;
+        top: 2rem;
         left: 50%;
         transform: translateX(-50%);
-        background: white;
-        padding: 10px 20px;
-        border-radius: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+        box-shadow: var(--glass-shadow);
         z-index: 10;
         max-width: 80%;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-weight: 600;
+        transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .study-header.glass-hover:hover {
+        transform: translateX(-50%);
+        background: var(--glass-hover);
+        box-shadow: var(--glass-shadow-hover);
     }
 
     .study-footer {
         position: absolute;
-        bottom: 20px;
+        bottom: 2rem;
         left: 50%;
         transform: translateX(-50%);
-        background: white;
-        padding: 12px 20px;
-        border-radius: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+        box-shadow: var(--glass-shadow);
         z-index: 10;
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 1rem;
+        transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .progress-container {
-        width: 120px;
-        height: 6px;
-        background: #e0e7ff;
-        border-radius: 3px;
-        overflow: hidden;
-    }
-
-    .progress-bar {
-        height: 100%;
-        background: #4f46e5;
-        transition: width 0.3s;
+    .study-footer.glass-hover:hover {
+        transform: translateX(-50%);
+        background: var(--glass-hover);
+        box-shadow: var(--glass-shadow-hover);
     }
 
     @media (max-width: 800px) {
         .flashcard-container {
             width: 90%;
-            height: 60vh;
+            height: 50vh;
         }
 
         .card-front, .card-back {
             font-size: 1.4rem;
-            padding: 25px;
+            padding: 1.5rem;
         }
 
         .arrow {
             width: 50px;
             height: 50px;
-            font-size: 2rem;
+            font-size: 1.5rem;
         }
 
         .left-arrow {
-            left: -50px;
+            left: -20px;
         }
 
         .right-arrow {
-            right: -50px;
+            right: -20px;
         }
 
         .study-header {
             font-size: 0.9rem;
-            padding: 8px 15px;
+            padding: 0.5rem 1rem;
         }
     }
 
@@ -195,12 +198,9 @@
             height: 40px;
         }
 
-        .left-arrow {
-            left: -30px;
-        }
-
-        .right-arrow {
-            right: -30px;
+        .study-footer {
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
         }
     }
 </style>
@@ -208,12 +208,12 @@
 
 {% block content %}
 <div class="study-container">
-    <div class="study-header">
-        <h5 class="mb-0">{{ flashcard_set.title }}</h5>
+    <div class="study-header glass-hover">
+        {{ flashcard_set.title }}
     </div>
 
     <div class="flashcard-container">
-        <button class="arrow left-arrow" onclick="prevCard()" aria-label="Previous card">‹</button>
+        <button class="arrow left-arrow glass-hover" onclick="prevCard()" aria-label="Previous card">‹</button>
 
         <div class="flashcard" onclick="flipCard()">
             <div class="card-inner" id="cardInner">
@@ -226,16 +226,20 @@
             </div>
         </div>
 
-        <button class="arrow right-arrow" onclick="nextCard()" aria-label="Next card">›</button>
+        <button class="arrow right-arrow glass-hover" onclick="nextCard()" aria-label="Next card">›</button>
     </div>
 
-    <div class="study-footer">
+    <div class="study-footer glass-hover">
         <div class="progress-container">
             <div class="progress-bar" id="studyProgress"></div>
         </div>
         <span id="cardCounter">1/1</span>
-        <button class="btn btn-sm btn-outline-secondary" onclick="shuffleCards()">Shuffle</button>
-        <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" class="btn btn-sm btn-outline-secondary">Exit</a>
+        <button class="btn-glass btn-glass-sm" onclick="shuffleCards()">
+            <i class="fas fa-random me-1"></i>Shuffle
+        </button>
+        <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" class="btn-glass btn-glass-sm">
+            <i class="fas fa-sign-out-alt me-1"></i>Exit
+        </a>
     </div>
 </div>
 {% endblock %}
@@ -305,20 +309,6 @@
         currentIndex = 0;
         flipped = false;
         updateCard();
-        showToast("Cards shuffled!");
-    }
-
-    function showToast(message) {
-        const toast = document.createElement("div");
-        toast.className = "position-fixed bottom-0 start-50 translate-middle-x mb-4 p-3 bg-dark text-white rounded";
-        toast.style.zIndex = "1000";
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.classList.add("fade");
-            setTimeout(() => toast.remove(), 300);
-        }, 2000);
     }
 
     let touchStartX = 0;
