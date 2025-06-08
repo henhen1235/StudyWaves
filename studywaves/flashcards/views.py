@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib import messages
 from podcast.models import Podcast
 from .models import FlashcardSet, Flashcard
 from .forms import FlashcardSetForm
@@ -56,21 +55,6 @@ def study_flashcards(request, set_id):
     return render(request, 'flashcards/study.html', context)
 
 @login_required
-def create_flashcard_set(request):
-    if request.method == 'POST':
-        form = FlashcardSetForm(request.POST)
-        if form.is_valid():
-            flashcard_set = form.save(commit=False)
-            flashcard_set.created_by = request.user
-            flashcard_set.save()
-            messages.success(request, 'Flashcard set created successfully!')
-            return redirect('flashcards:set_detail', set_id=flashcard_set.id)
-    else:
-        form = FlashcardSetForm()
-    
-    return render(request, 'flashcards/create_set.html', {'form': form})
-
-@login_required
 def generate_flashcards_from_podcast(request, podcast_id):
     podcast = get_object_or_404(Podcast, id=podcast_id)
     
@@ -86,7 +70,6 @@ def generate_flashcards_from_podcast(request, podcast_id):
                         'error': 'Flashcards already exist for this podcast',
                         'set_id': existing_set.id
                     })
-                messages.warning(request, 'Flashcards already exist for this podcast')
                 return redirect('flashcards:set_detail', set_id=existing_set.id)
             
             if not hasattr(podcast, 'script') or not podcast.script:
@@ -96,7 +79,6 @@ def generate_flashcards_from_podcast(request, podcast_id):
                         'success': False,
                         'error': error_msg
                     })
-                messages.error(request, error_msg)
                 return redirect('flashcards:home')
             
             flashcards_text = generate_flashcards_with_gemini(podcast.script)
@@ -108,7 +90,6 @@ def generate_flashcards_from_podcast(request, podcast_id):
                         'success': False,
                         'error': error_msg
                     })
-                messages.error(request, error_msg)
                 return redirect('flashcards:home')
             
             flashcard_set = FlashcardSet.objects.create(
@@ -128,7 +109,6 @@ def generate_flashcards_from_podcast(request, podcast_id):
                         'success': False,
                         'error': error_msg
                     })
-                messages.error(request, error_msg)
                 return redirect('flashcards:home')
             
             for i, (term, definition) in enumerate(flashcards):
@@ -146,7 +126,6 @@ def generate_flashcards_from_podcast(request, podcast_id):
                     'message': f'Successfully generated {len(flashcards)} flashcards!'
                 })
             
-            messages.success(request, f'Successfully generated {len(flashcards)} flashcards!')
             return redirect('flashcards:set_detail', set_id=flashcard_set.id)
             
         except Exception as e:
@@ -157,7 +136,6 @@ def generate_flashcards_from_podcast(request, podcast_id):
                     'error': f'Error generating flashcards: {str(e)}'
                 }, status=500)
             
-            messages.error(request, f'Error generating flashcards: {str(e)}')
             return redirect('flashcards:home')
     
     return redirect('flashcards:home')
@@ -227,6 +205,5 @@ def delete_flashcard_set(request, set_id):
     flashcard_set = get_object_or_404(FlashcardSet, id=set_id, created_by=request.user)
     if request.method == 'POST':
         flashcard_set.delete()
-        messages.success(request, 'Flashcard set deleted!')
         return redirect('flashcards:home')
     return render(request, 'flashcards/confirm_delete.html', {'flashcard_set': flashcard_set})
