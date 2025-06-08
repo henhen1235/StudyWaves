@@ -51,10 +51,15 @@
         button:hover {
             background-color: #45a049;
         }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
         .google-drive-btn {
             background-color: #4285f4;
         }
-        .google-drive-btn:hover {
+        .google-drive-btn:hover:not(:disabled) {
             background-color: #3367d6;
         }
         .upload-options {
@@ -123,6 +128,9 @@
             background: rgba(255, 255, 255, 0.2);
             border-radius: 4px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .list-group-item-glass:hover {
             background: rgba(255, 255, 255, 0.3);
@@ -130,6 +138,45 @@
         .modal-loading-indicator {
             text-align: center;
             padding: 20px;
+        }
+        .file-icon {
+            width: 20px;
+            height: 20px;
+        }
+        .file-info {
+            flex-grow: 1;
+        }
+        .file-name {
+            font-weight: bold;
+        }
+        .file-size {
+            font-size: 12px;
+            color: #666;
+        }
+        .auth-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .auth-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .auth-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .debug-info {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -164,14 +211,29 @@
                     
                     <div class="upload-option">
                         <h4>Option 2: Select from Google Drive</h4>
-                        <button type="button" id="googleDriveBtn" class="google-drive-btn">
+                        
+                        <!-- Debug info -->
+                        <div id="debugInfo" class="debug-info">
+                            <strong>Debug Info:</strong><br>
+                            GAPI Loaded: <span id="gapiStatus">false</span><br>
+                            GIS Loaded: <span id="gisStatus">false</span><br>
+                            Access Token: <span id="tokenStatus">none</span><br>
+                            API Keys: <span id="apiKeyStatus">checking...</span>
+                        </div>
+                        
+                        <div id="authStatus" class="auth-status" style="display: none;"></div>
+                        <button type="button" id="googleDriveBtn" class="google-drive-btn" disabled>
                             📁 Sign in to Google Drive
                         </button>
-                        <button type="button" id="openPickerBtn" class="google-drive-btn">
+                        <button type="button" id="openPickerBtn" class="google-drive-btn" disabled>
                             📂 Open Picker
+                        </button>
+                        <button type="button" id="signOutBtn" class="google-drive-btn" style="display: none; background-color: #dc3545;">
+                            🚪 Sign Out
                         </button>
                         <input type="hidden" id="googleDriveFileId" name="google_drive_file_id">
                         <input type="hidden" id="googleDriveFileName" name="google_drive_file_name">
+                        <input type="hidden" id="googleDriveAccessToken" name="google_drive_access_token">
                         <div id="selectedGoogleFile" class="selected-file" style="display: none;"></div>
                         <small>Select files from your Google Drive</small>
                     </div>
@@ -196,219 +258,333 @@
             <div id="googleDriveFilesList"></div>
         </div>
     </div>
-    
+
     <script>
-        // Your Google API credentials
-        const CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com';
-        const API_KEY = 'AIzaSyCmKXw4xExuEwAf3wJzP4LrHNuetjwP0eA';
-        const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
+        // Google Drive API Configuration - YOU NEED TO REPLACE THESE!
+        const GOOGLE_API_KEY = 'AIzaSyCmKXw4xExuEwAf3wJzP4LrHNuetjwP0eA'; // Replace with your actual API key
+        const GOOGLE_CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com'; // Replace with your actual client ID
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
-        let gapiInited = false;
-        let gisInited = false;
+        let gapi_loaded = false;
+        let gis_loaded = false;
         let tokenClient;
-        let isSignedIn = false;
+        let access_token = null;
 
-        // Initialize gapi for Drive API
-        async function gapiLoaded() {
-            await gapi.load('client', initializeGapiClient);
+        // Debug function to update status
+        function updateDebugInfo() {
+            document.getElementById('gapiStatus').textContent = gapi_loaded;
+            document.getElementById('gisStatus').textContent = gis_loaded;
+            document.getElementById('tokenStatus').textContent = access_token ? 'present' : 'none';
+            
+            // Check if API keys are set
+            const apiKeySet = GOOGLE_API_KEY !== 'YOUR_API_KEY_HERE';
+            const clientIdSet = GOOGLE_CLIENT_ID !== 'YOUR_CLIENT_ID_HERE';
+            document.getElementById('apiKeyStatus').textContent = 
+                apiKeySet && clientIdSet ? 'configured' : 'MISSING - Please set API keys!';
+        }
+
+        // Initialize Google APIs
+        function gapiLoaded() {
+            console.log('GAPI loaded');
+            gapi.load('client', initializeGapiClient);
+            gapi_loaded = true;
+            updateDebugInfo();
+            maybeEnableButtons();
         }
 
         async function initializeGapiClient() {
-            await gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: DISCOVERY_DOCS,
-            });
-            gapiInited = true;
-            maybeEnableButtons();
+            console.log('Initializing GAPI client...');
+            try {
+                await gapi.client.init({
+                    apiKey: GOOGLE_API_KEY,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                console.log('GAPI client initialized successfully');
+            } catch (error) {
+                console.error('Error initializing GAPI client:', error);
+                updateAuthStatus(false, 'Error initializing Google API');
+            }
         }
 
-        // Initialize Google Identity Services
         function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // Will be set later
-            });
-            gisInited = true;
-            maybeEnableButtons();
+            console.log('GIS loaded');
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (resp) => {
+                        console.log('Token response:', resp);
+                        if (resp.error !== undefined) {
+                            console.error('Token error:', resp.error);
+                            updateAuthStatus(false, `Authentication error: ${resp.error}`);
+                            throw (resp);
+                        }
+                        access_token = resp.access_token;
+                        console.log('Access token received');
+                        updateAuthStatus(true);
+                        enablePickerButton();
+                        updateDebugInfo();
+                    },
+                });
+                gis_loaded = true;
+                updateDebugInfo();
+                maybeEnableButtons();
+                console.log('Token client initialized');
+            } catch (error) {
+                console.error('Error initializing token client:', error);
+                updateAuthStatus(false, 'Error initializing authentication');
+            }
         }
 
         function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                document.getElementById('googleDriveBtn').disabled = false;
-                // Only enable picker button if signed in
-                document.getElementById('openPickerBtn').disabled = !isSignedIn;
-            }
-        }
-
-        // Handle authentication
-        function handleAuthClick() {
-            tokenClient.callback = async (response) => {
-                if (response.error !== undefined) {
-                    console.error('Authentication error:', response.error);
-                    alert('Authentication failed. Please try again.');
-                    return;
-                }
+            console.log('Checking if buttons can be enabled...', {gapi_loaded, gis_loaded});
+            if (gapi_loaded && gis_loaded) {
+                const apiKeySet = GOOGLE_API_KEY !== 'YOUR_API_KEY_HERE';
+                const clientIdSet = GOOGLE_CLIENT_ID !== 'YOUR_CLIENT_ID_HERE';
                 
-                // Store the token in gapi.client
-                gapi.client.setToken(response);
-                
-                // Update UI
-                document.getElementById('googleDriveBtn').innerHTML = '✅ Signed in to Google Drive';
-                document.getElementById('googleDriveBtn').disabled = true;
-                
-                // Set signed in flag
-                isSignedIn = true;
-                
-                // Enable the picker button
-                document.getElementById('openPickerBtn').disabled = false;
-            };
-
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        // Modal functions
-        function openDriveModal() {
-            document.getElementById('driveModal').style.display = 'block';
-        }
-
-        function closeDriveModal() {
-            document.getElementById('driveModal').style.display = 'none';
-        }
-
-        // Open custom modal and fetch files
-        async function openCustomDrivePicker() {
-            try {
-                // Check if we have a token
-                const token = gapi.client.getToken();
-                if (!token || !token.access_token) {
-                    alert('Please sign in to Google Drive first.');
-                    handleAuthClick(); // Automatically trigger sign-in
-                    return;
-                }
-                
-                openDriveModal();
-                await fetchAndDisplayDriveFiles();
-            } catch (error) {
-                console.error('Error opening picker:', error);
-                alert('Error accessing Google Drive. Please sign in again.');
-                handleAuthClick(); // Try to re-authenticate
-            }
-        }
-
-        async function fetchAndDisplayDriveFiles() {
-            const filesListDiv = document.getElementById('googleDriveFilesList');
-            const loadingIndicator = document.getElementById('driveModalLoading');
-            
-            filesListDiv.innerHTML = ''; // Clear previous content
-            loadingIndicator.style.display = 'block';
-
-            try {
-                const response = await gapi.client.drive.files.list({
-                    pageSize: 20,
-                    fields: "nextPageToken, files(id, name, iconLink, mimeType)",
-                    q: "mimeType!='application/vnd.google-apps.folder'",
-                    orderBy: "modifiedTime desc"
-                });
-                
-                loadingIndicator.style.display = 'none';
-                const files = response.result.files;
-                if (files && files.length > 0) {
-                    files.forEach(file => {
-                        // Create file element
-                        const fileElement = document.createElement('div');
-                        fileElement.className = 'list-group-item-glass';
-                        fileElement.innerHTML = `<img src="${file.iconLink}" alt="icon" width="20" height="20"> ${file.name}`;
-                        fileElement.onclick = () => handleDriveFileSelect(file.id, file.name);
-                        filesListDiv.appendChild(fileElement);
-                    });
-                } else {
-                    filesListDiv.innerHTML = '<div class="modal-loading-indicator">No files found in your Google Drive.</div>';
-                }
-            } catch (error) {
-                console.error('Error fetching Google Drive files:', error);
-                loadingIndicator.style.display = 'none';
-                filesListDiv.innerHTML = '<div class="modal-loading-indicator">Error loading files. Please try again.</div>';
-                
-                // If the error is due to authentication, prompt to sign in again
-                if (error.status === 401) {
-                    alert('Your session expired. Please sign in again.');
-                    isSignedIn = false;
-                    document.getElementById('googleDriveBtn').innerHTML = '📁 Sign in to Google Drive';
+                if (apiKeySet && clientIdSet) {
                     document.getElementById('googleDriveBtn').disabled = false;
-                    document.getElementById('openPickerBtn').disabled = true;
-                    gapi.client.setToken(null);
+                    console.log('Sign in button enabled');
+                } else {
+                    updateAuthStatus(false, 'Please configure your Google API credentials in the JavaScript');
                 }
             }
         }
 
-        function handleDriveFileSelect(fileId, fileName) {
-            console.log('Selected Google Drive file:', fileName, 'ID:', fileId);
-            
-            document.getElementById('googleDriveFileId').value = fileId;
-            document.getElementById('googleDriveFileName').value = fileName;
-            
-            const selectedFileDiv = document.getElementById('selectedGoogleFile');
-            selectedFileDiv.innerHTML = `✅ Selected from Drive: ${fileName}`;
-            selectedFileDiv.style.display = 'block';
-            
-            document.getElementById('fileInput').value = ''; // Clear local file input
-            closeDriveModal();
+        function enablePickerButton() {
+            console.log('Enabling picker button');
+            document.getElementById('openPickerBtn').disabled = false;
+            document.getElementById('googleDriveBtn').style.display = 'none';
+            document.getElementById('signOutBtn').style.display = 'inline-block';
         }
 
-        // Event listeners
-        document.getElementById('googleDriveBtn').addEventListener('click', handleAuthClick);
-        document.getElementById('openPickerBtn').addEventListener('click', openCustomDrivePicker); 
-        document.getElementById('closeDriveModal').addEventListener('click', closeDriveModal);
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', function(event) {
-            if (event.target === document.getElementById('driveModal')) {
-                closeDriveModal();
-            }
-        });
-
-        document.getElementById('googleDriveBtn').disabled = true; 
-        document.getElementById('openPickerBtn').disabled = true; // Initially disable picker button
-
-        // Clear Google Drive selection when local file is selected
-        document.getElementById('fileInput').addEventListener('change', function() {
-            if (this.files.length > 0) {
-                document.getElementById('googleDriveFileId').value = '';
-                document.getElementById('googleDriveFileName').value = '';
-                document.getElementById('selectedGoogleFile').style.display = 'none';
-            }
-        });
-
-        // Form validation
-        document.getElementById('podcastForm').addEventListener('submit', function(e) {
-            const localFile = document.getElementById('fileInput').files.length > 0;
-            const googleFile = document.getElementById('googleDriveFileId').value !== '';
+        function updateAuthStatus(isAuthenticated, message = '') {
+            const authStatus = document.getElementById('authStatus');
+            authStatus.style.display = 'block';
             
-            if (!localFile && !googleFile) {
-                e.preventDefault();
-                alert('Please select a file either from your computer or Google Drive.');
+            if (isAuthenticated) {
+                authStatus.className = 'auth-status auth-success';
+                authStatus.textContent = '✅ Successfully connected to Google Drive';
+            } else {
+                authStatus.className = 'auth-status auth-error';
+                authStatus.textContent = message || '❌ Not connected to Google Drive';
+            }
+        }
+
+        // Handle Google Drive authentication
+        function handleAuthClick() {
+            console.log('Auth button clicked');
+            if (!tokenClient) {
+                console.error('Token client not initialized');
+                updateAuthStatus(false, 'Authentication not properly initialized');
                 return;
             }
             
-            document.getElementById('loading').style.display = 'block';
-        });
+            try {
+                if (access_token === null) {
+                    console.log('Requesting new token with consent');
+                    tokenClient.requestAccessToken({prompt: 'consent'});
+                } else {
+                    console.log('Requesting token refresh');
+                    tokenClient.requestAccessToken({prompt: ''});
+                }
+            } catch (error) {
+                console.error('Error during authentication:', error);
+                updateAuthStatus(false, 'Authentication failed');
+            }
+        }
 
-        // Duration slider
-        const input = document.querySelector("#duration");
-        const durationValue = document.querySelector("#durationValue");
+        function handleSignoutClick() {
+            console.log('Sign out clicked');
+            if (access_token) {
+                google.accounts.oauth2.revoke(access_token);
+                access_token = null;
+                updateAuthStatus(false, 'Signed out from Google Drive');
+                document.getElementById('openPickerBtn').disabled = true;
+                document.getElementById('googleDriveBtn').style.display = 'inline-block';
+                document.getElementById('signOutBtn').style.display = 'none';
+                clearSelectedFile();
+                updateDebugInfo();
+            }
+        }
 
-        input.addEventListener("input", function() {
-            durationValue.textContent = input.value;
-        });
+        // Load Google Drive files
+        async function loadGoogleDriveFiles() {
+            console.log('Loading Google Drive files...');
+            try {
+                gapi.client.setToken({access_token: access_token});
+                
+                const response = await gapi.client.drive.files.list({
+                    pageSize: 50,
+                    fields: 'nextPageToken, files(id, name, mimeType, size, modifiedTime)',
+                    q: "trashed=false and (mimeType='application/pdf' or mimeType='text/plain' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType='application/msword' or mimeType='text/csv' or mimeType='application/vnd.ms-excel' or mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or mimeType='application/vnd.google-apps.document')"
+                });
 
-        // Load Google APIs when page loads
+                console.log('Files loaded:', response.result.files);
+                return response.result.files;
+            } catch (err) {
+                console.error('Error loading Google Drive files:', err);
+                updateAuthStatus(false, 'Error loading files from Google Drive');
+                return [];
+            }
+        }
+
+        // Display files in modal
+        function displayFilesInModal(files) {
+            const filesList = document.getElementById('googleDriveFilesList');
+            const loading = document.getElementById('driveModalLoading');
+            
+            loading.style.display = 'none';
+            
+            if (files.length === 0) {
+                filesList.innerHTML = '<p>No compatible files found in your Google Drive. Supported formats: PDF, TXT, DOC, DOCX, CSV, XLS, XLSX, Google Docs</p>';
+                return;
+            }
+
+            filesList.innerHTML = files.map(file => {
+                const fileSize = file.size ? formatFileSize(parseInt(file.size)) : 'Unknown size';
+                const fileIcon = getFileIcon(file.mimeType);
+                const modifiedDate = new Date(file.modifiedTime).toLocaleDateString();
+                
+                return `
+                    <div class="list-group-item-glass" onclick="selectGoogleDriveFile('${file.id}', '${file.name.replace(/'/g, "\\'")}')">
+                        <div class="file-icon">${fileIcon}</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${fileSize} • Modified ${modifiedDate}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getFileIcon(mimeType) {
+            switch(mimeType) {
+                case 'application/pdf': return '📄';
+                case 'text/plain': return '📝';
+                case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                case 'application/msword': return '📘';
+                case 'text/csv':
+                case 'application/vnd.ms-excel':
+                case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return '📊';
+                case 'application/vnd.google-apps.document': return '📃';
+                default: return '📄';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Select a file from Google Drive
+        function selectGoogleDriveFile(fileId, fileName) {
+            console.log('File selected:', fileName, fileId);
+            document.getElementById('googleDriveFileId').value = fileId;
+            document.getElementById('googleDriveFileName').value = fileName;
+            document.getElementById('googleDriveAccessToken').value = access_token;
+            
+            const selectedFileDiv = document.getElementById('selectedGoogleFile');
+            selectedFileDiv.innerHTML = `<strong>Selected:</strong> ${fileName}`;
+            selectedFileDiv.style.display = 'block';
+            
+            // Clear the local file input
+            document.getElementById('fileInput').value = '';
+            
+            // Close the modal
+            document.getElementById('driveModal').style.display = 'none';
+        }
+
+        function clearSelectedFile() {
+            document.getElementById('googleDriveFileId').value = '';
+            document.getElementById('googleDriveFileName').value = '';
+            document.getElementById('googleDriveAccessToken').value = '';
+            document.getElementById('selectedGoogleFile').style.display = 'none';
+        }
+
+        // Open Google Drive picker modal
+        async function openGoogleDrivePicker() {
+            console.log('Opening Google Drive picker...');
+            if (!access_token) {
+                alert('Please sign in to Google Drive first');
+                return;
+            }
+            
+            const modal = document.getElementById('driveModal');
+            const loading = document.getElementById('driveModalLoading');
+            const filesList = document.getElementById('googleDriveFilesList');
+            
+            modal.style.display = 'block';
+            loading.style.display = 'block';
+            filesList.innerHTML = '';
+            
+            const files = await loadGoogleDriveFiles();
+            displayFilesInModal(files);
+        }
+
+        // Event Listeners
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up event listeners...');
+            
+            // Update debug info initially
+            updateDebugInfo();
+            
+            // Duration slider
+            const durationSlider = document.getElementById('duration');
+            const durationValue = document.getElementById('durationValue');
+            
+            durationSlider.addEventListener('input', function() {
+                durationValue.textContent = this.value;
+            });
+
+            // Google Drive buttons
+            document.getElementById('googleDriveBtn').addEventListener('click', handleAuthClick);
+            document.getElementById('signOutBtn').addEventListener('click', handleSignoutClick);
+            document.getElementById('openPickerBtn').addEventListener('click', openGoogleDrivePicker);
+
+            // Modal close
+            document.getElementById('closeDriveModal').addEventListener('click', function() {
+                document.getElementById('driveModal').style.display = 'none';
+            });
+
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
+                const modal = document.getElementById('driveModal');
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Form submission
+            document.getElementById('podcastForm').addEventListener('submit', function(e) {
+                const fileInput = document.getElementById('fileInput');
+                const googleDriveFileId = document.getElementById('googleDriveFileId').value;
+                
+                if (!fileInput.files.length && !googleDriveFileId) {
+                    e.preventDefault();
+                    alert('Please select a file either from your computer or Google Drive');
+                    return;
+                }
+                
+                document.getElementById('loading').style.display = 'block';
+            });
+
+            // File input change - clear Google Drive selection
+            document.getElementById('fileInput').addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    clearSelectedFile();
+                }
+            });
+        });
+
+        // Load Google APIs when the page loads
+        function initGoogleApis() {
+            console.log('Initializing Google APIs...');
+            
             // Load GAPI
             if (typeof gapi !== 'undefined') {
                 gapiLoaded();
@@ -422,6 +598,13 @@
             } else {
                 console.error('Google Identity Services not loaded');
             }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, initializing APIs...');
+            // Small delay to ensure scripts are fully loaded
+            setTimeout(initGoogleApis, 100);
         });
     </script>
 </body>
