@@ -1,44 +1,48 @@
+{% extends "podcast/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>StudyWaves</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
 
-    body {
-      background-color: #121212;
-      color: #FFFFFF;
-      font-family: 'Helvetica Neue', sans-serif;
+{% block title %}{{ podcast.title }} - StudyWaves{% endblock %}
+
+{% block content %}
+<style>
+    .audio-main-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      padding: 20px;
+      padding: 40px 20px;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .audio-glass-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 800px;
+      margin: 20px auto;
+      transition: all 0.3s ease;
     }
 
     h1 {
       margin-bottom: 40px;
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 600;
       text-transform: capitalize;
       text-align: center;
-      color: #FFFFFF;
+      color: white;
     }
 
     .player-container {
-      background-color: #1e1e1e;
       padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
       width: 100%;
-      max-width: 400px;
+      max-width: 500px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -47,18 +51,19 @@
     .progress-container {
       width: 100%;
       height: 6px;
-      background-color: #3e3e3e;
-      border-radius: 4px;
-      margin-bottom: 10px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      margin: 20px 0 10px;
       cursor: pointer;
       position: relative;
+      overflow: hidden;
     }
 
     .progress-bar {
       height: 100%;
-      background-color: #1DB954;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
       width: 0%;
-      border-radius: 4px;
+      border-radius: 6px;
       transition: width 0.2s;
     }
 
@@ -66,33 +71,36 @@
       width: 100%;
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
-      color: #bbb;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
       margin-bottom: 30px;
+      font-weight: 500;
     }
 
     .controls {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 15px;
-      margin-bottom: 20px;
+      gap: 20px;
+      margin-bottom: 30px;
     }
 
     .toggle-button {
-      background-color: #1DB954;
-      border: none;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 50%;
       padding: 20px;
       cursor: pointer;
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: background-color 0.2s;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
     }
 
     .toggle-button:hover {
-      background-color: #1ed760;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
     }
 
     .toggle-button svg {
@@ -102,18 +110,24 @@
     }
 
     .question-button {
-      background-color: #4858e8;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       color: white;
-      border: none;
-      border-radius: 20px;
-      padding: 10px 15px;
-      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .question-button:hover {
-      background-color: #3a47c0;
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     }
 
     .question-modal {
@@ -123,65 +137,95 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
       z-index: 10;
       justify-content: center;
       align-items: center;
     }
 
     .modal-content {
-      background-color: #2e2e2e;
-      border-radius: 10px;
-      padding: 25px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 30px;
       width: 90%;
       max-width: 500px;
     }
 
     .modal-header {
       margin-bottom: 20px;
-      font-size: 18px;
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
     }
 
     .modal-input {
       width: 100%;
-      background-color: #3e3e3e;
-      border: none;
-      border-radius: 5px;
-      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 14px;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
       margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .modal-input:focus {
+      outline: none;
+      border-color: rgba(139, 92, 246, 0.5);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
     }
 
     .modal-buttons {
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
+      gap: 15px;
     }
 
     .modal-button {
-      padding: 10px 15px;
+      padding: 12px 20px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.3s ease;
     }
 
     .cancel-button {
-      background-color: #464646;
+      background: rgba(255, 255, 255, 0.1);
       color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .cancel-button:hover {
+      background: rgba(255, 255, 255, 0.15);
     }
 
     .submit-button {
-      background-color: #1DB954;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
       color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+    
+    .submit-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
     }
 
     .loading-indicator {
       display: none;
       text-align: center;
       margin-top: 15px;
-      color: #bbb;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+      font-weight: 500;
     }
     
     .input-container {
@@ -191,12 +235,12 @@
     }
     
     .mic-button {
-      background-color: #1DB954;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
       color: white;
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       cursor: pointer;
       display: flex;
       justify-content: center;
@@ -205,10 +249,13 @@
       right: 10px;
       top: 50%;
       transform: translateY(-50%);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      transition: all 0.3s ease;
     }
     
     .mic-button:hover {
-      background-color: #1ed760;
+      transform: translateY(-50%) scale(1.05);
+      box-shadow: 0 8px 16px rgba(139, 92, 246, 0.4);
     }
     
     .mic-button svg {
@@ -218,67 +265,80 @@
     }
     
     .mic-active {
-      background-color: #ff4040;
+      background: linear-gradient(135deg, #ef4444, #f97316);
       animation: pulse 1.5s infinite;
     }
     
     @keyframes pulse {
       0% {
-        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
       }
       70% {
-        box-shadow: 0 0 0 10px rgba(255, 64, 64, 0);
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
       }
       100% {
-        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+    
+    /* Add responsive styling */
+    @media (max-width: 768px) {
+      .audio-glass-card {
+        padding: 25px;
+      }
+      
+      h1 {
+        font-size: 24px;
+        margin-bottom: 30px;
       }
     }
   </style>
-</head>
-<body style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #581c87 50%, #be185d 75%, #dc2626 100%);">
-  <div class="container" style="background-color: rgba(255, 255, 255, 0.3) !important; padding: 100px !important; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
 
-    <h1>{{ podcast.title }}</h1>
-    <div class="player-container">
-        <audio id="audio"></audio>
+<div class="audio-main-container">
+    <div class="audio-glass-card" style="justify-items: center;">
+        <h1>{{ podcast.title }}</h1>
+        
+        <div class="player-container">
+            <audio id="audio"></audio>
 
-        <div class="progress-container" id="progressContainer">
-        <div class="progress-bar" id="progressBar"></div>
-        </div>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
 
-        <div class="time-display">
-        <span id="currentTime">0:00</span>
-        <span id="totalTime">0:00</span>
-        </div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
 
-        <div class="controls">
-        <button class="toggle-button" id="playPauseBtn">
-            <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6zm8-14v14h4V5h-4z"/></svg>
-        </button>
-        <button class="question-button" id="questionBtn">Ask a Question</button>
+            <div class="controls">
+                <button class="toggle-button" id="playPauseBtn">
+                    <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button class="question-button" id="questionBtn">Ask a Question</button>
+            </div>
         </div>
     </div>
 
     <div class="question-modal" id="questionModal">
         <div class="modal-content">
-        <div class="modal-header">Ask a Question</div>
-        <div class="input-container">
-            <input type="text" class="modal-input" id="questionInput" placeholder="Type your question here...">
-            <button class="mic-button" id="micBtn">
-            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-            </button>
-        </div>
-        <div class="loading-indicator" id="loadingIndicator">
-            Generating response... This may take a moment.
-        </div>
-        <div class="modal-buttons">
-            <button class="modal-button cancel-button" id="cancelBtn">Cancel</button>
-            <button class="modal-button submit-button" id="submitBtn">Submit</button>
-        </div>
+            <div class="modal-header">Ask a Question</div>
+            <div class="input-container">
+                <input type="text" class="modal-input" id="questionInput" placeholder="Type your question here...">
+                <button class="mic-button" id="micBtn">
+                    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </button>
+            </div>
+            <div class="loading-indicator" id="loadingIndicator">
+                Generating response... This may take a moment.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button cancel-button" id="cancelBtn">Cancel</button>
+                <button class="modal-button submit-button" id="submitBtn">Submit</button>
+            </div>
         </div>
     </div>
-  </div>
+</div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -680,5 +740,4 @@
     initializePlayer();
   });
 </script>
-</body>
-</html>
+{% endblock %}
