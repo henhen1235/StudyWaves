@@ -21,6 +21,7 @@ from pydub import AudioSegment
 from dotenv import load_dotenv
 from murf import Murf  # Import the Murf library
 from . models import Podcast, Segment  # Import your PodcastFile model
+import shutil
 
 
 load_dotenv()
@@ -188,12 +189,18 @@ def audio_player(request, podcast_id):
 # Add this function to your views.py file
 # @csrf_exempt
 def ask_question(request):
-    """
-    Custom implementation to handle user questions by generating audio responses
-    that integrate seamlessly into the podcast.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+    folder = '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/questions'
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
     
     try:
         # Parse the request data

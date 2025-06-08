@@ -1,7 +1,7 @@
-from django.db import models
-
+# flashcards/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from podcast.models import Podcast  # Add this import
 
 class FlashcardSet(models.Model):
     title = models.CharField(max_length=200)
@@ -9,6 +9,7 @@ class FlashcardSet(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    podcast = models.ForeignKey(Podcast, null=True, blank=True, on_delete=models.SET_NULL)  # Add this field
     
     def __str__(self):
         return self.title
@@ -27,14 +28,3 @@ class Flashcard(models.Model):
     
     class Meta:
         ordering = ['order', 'id']
-
-class StudySession(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    flashcard_set = models.ForeignKey(FlashcardSet, on_delete=models.CASCADE)
-    started_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    total_cards = models.IntegerField(default=0)
-    correct_answers = models.IntegerField(default=0)
-    
-    def __str__(self):
-        return f"{self.user.username} - {self.flashcard_set.title}"

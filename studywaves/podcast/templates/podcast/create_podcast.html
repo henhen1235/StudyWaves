@@ -44,6 +44,7 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            margin-right: 10px; /* Added margin for spacing */
         }
         button:hover {
             background-color: #45a049;
@@ -60,6 +61,7 @@
             white-space: pre-wrap;
         }
     </style>
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
     <h1>Create Teaching Podcast Script</h1>
@@ -80,8 +82,10 @@
             
             <div class="form-group">
                 <label for="fileInput">Upload Learning Material (text, PDF, etc.):</label>
-                <input type="file" id="fileInput" name="file" required>
-                <small>Upload files containing content about your topic</small>
+                <input type="file" id="fileInput" name="file">
+                <small>Upload files containing content about your topic OR</small>
+                <button type="button" id="drivePickerButton">Pick from Google Drive</button>
+                <div id="pickedFiles"></div>
             </div>
             
             <button type="submit">Generate Podcast Script</button>
@@ -101,6 +105,97 @@
     {% endif %}
     
     <script>
+        const API_KEY = 'AIzaSyCmKXw4xExuEwAf3wJzP4LrHNuetjwP0eA';
+        const CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com ';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+        let tokenClient;
+        let pickerApiLoaded = false;
+        let oauthToken = null;
+
+        document.getElementById('drivePickerButton').addEventListener('click', () => {
+            if (pickerApiLoaded && oauthToken) {
+                createPicker();
+            } else if (!pickerApiLoaded) {
+                gapi.load('picker', onPickerApiLoad);
+                handleAuthClick();
+            } else {
+                handleAuthClick();
+            }
+        });
+
+        function gisInited() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    oauthToken = tokenResponse.access_token;
+                    if (pickerApiLoaded) {
+                        createPicker();
+                    }
+                },
+            });
+        }
+
+        function handleAuthClick() {
+            if (oauthToken) {
+                google.accounts.oauth2.revoke(oauthToken, () => {
+                    oauthToken = null;
+                });
+            }
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        }
+
+        function onPickerApiLoad() {
+            pickerApiLoaded = true;
+            if (oauthToken) {
+                createPicker();
+            }
+        }
+
+        function createPicker() {
+            if (!pickerApiLoaded || !oauthToken) {
+                return;
+            }
+            const view = new google.picker.View(google.picker.ViewId.DOCS);
+            view.setMimeTypes("text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"); // Example MIME types
+            const picker = new google.picker.PickerBuilder()
+                .setAppId(CLIENT_ID.split('-')[0]) // App ID is usually the numeric part of client ID
+                .setOAuthToken(oauthToken)
+                .addView(view)
+                .setDeveloperKey(API_KEY)
+                .setCallback(pickerCallback)
+                .build();
+            picker.setVisible(true);
+        }
+
+        function pickerCallback(data) {
+            const pickedFilesDiv = document.getElementById('pickedFiles');
+            pickedFilesDiv.innerHTML = ''; 
+            if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+                const files = data[google.picker.Response.DOCUMENTS];
+                let fileIds = [];
+                files.forEach(function(file) {
+                    const p = document.createElement('p');
+                    p.textContent = `Picked: ${file.name} (ID: ${file.id})`;
+                    pickedFilesDiv.appendChild(p);
+                    fileIds.push(file.id);
+                });
+                // Add these file IDs to a hidden input to be submitted with the form
+                let hiddenInput = document.getElementById('driveFileIds');
+                if (!hiddenInput) {
+                    hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'drive_file_ids';
+                    hiddenInput.id = 'driveFileIds';
+                    document.getElementById('podcastForm').appendChild(hiddenInput);
+                }
+                hiddenInput.value = JSON.stringify(fileIds);
+                // Disable the regular file input if Drive files are picked
+                document.getElementById('fileInput').value = null; 
+                document.getElementById('fileInput').required = false;
+            }
+        }
+
         document.getElementById('podcastForm').addEventListener('submit', function() {
             document.getElementById('loading').style.display = 'block';
         });
@@ -111,6 +206,15 @@
         input.addEventListener("input", function() {
             durationValue.textContent = input.value;
         });
+
+        // Load the GSI client
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = gisInited;
+        document.head.appendChild(script);
+
     </script>
 </body>
 </html>

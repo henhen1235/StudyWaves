@@ -37,21 +37,21 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'flashcards:sets_list' %}">📚 Flashcards</a>
+            <a class="navbar-brand" href="{% url 'flashcards:sets_list' %}">WaveSound</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'flashcards:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'flashcards:sets_list' %}">All Sets</a>
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'flashcards:create_set' %}">Create Set</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'flashcards:generate_from_notes' %}">Generate from Notes</a>
                     </li>
                     {% endif %}
                 </ul>

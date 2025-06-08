@@ -1,0 +1,96 @@
+<!-- flashcards/templates/flashcards/home.html -->
+{% extends 'flashcards/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h1 class="my-4">Podcasts</h1>
+    <div class="row">
+        {% for podcast in podcasts %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ podcast.title }}</h5>
+                    <p class="card-text">{{ podcast.description|truncatechars:100 }}</p>
+                    
+                    <!-- Check if flashcards exist for this podcast -->
+                    {% with flashcard_set=podcast.flashcardset_set.first %}
+                        {% if flashcard_set %}
+                            <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" 
+                               class="btn btn-success study-btn" 
+                               data-podcast-id="{{ podcast.id }}">
+                                Study Flashcards
+                            </a>
+                        {% else %}
+                            <button class="btn btn-primary generate-btn" 
+                                    data-podcast-id="{{ podcast.id }}">
+                                Generate Flashcards
+                            </button>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <a href="{% url 'flashcards:podcast_redirect' podcast.id %}" 
+                       class="btn btn-outline-secondary">
+                        Listen
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle generate button clicks
+    document.querySelectorAll('.generate-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const podcastId = this.getAttribute('data-podcast-id');
+            const btn = this;
+            
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Make the AJAX request
+            fetch(`{% url 'flashcards:generate_from_podcast' 0 %}`.replace('0', podcastId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `title=Flashcards from Podcast ${podcastId}`
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // Follow the redirect
+                    window.location.href = response.url;
+                } else if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to show the new Study button
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while generating flashcards');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Generate Flashcards';
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
