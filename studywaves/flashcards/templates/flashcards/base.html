@@ -1,4 +1,3 @@
-<!-- flashcards/templates/flashcards/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,63 +5,297 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Flashcards App{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.18);
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --border-radius: 16px;
+            --border-radius-lg: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #581c87 50%, #be185d 75%, #dc2626 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            color: var(--text-primary);
         }
-        .navbar-brand {
-            font-weight: bold;
-            color: #4f46e5 !important;
+
+        /* Animated background orbs */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
         }
-        .card {
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+
+        body::before {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
         }
-        .card:hover {
+
+        body::after {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+            bottom: 10%;
+            right: 10%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px) scale(1); }
+            25% { transform: translateY(-20px) translateX(10px) scale(1.05); }
+            50% { transform: translateY(15px) translateX(-15px) scale(0.95); }
+            75% { transform: translateY(-10px) translateX(20px) scale(1.02); }
+        }
+
+        /* Glassmorphism base class */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .glass-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-hover:hover {
+            background: var(--glass-hover);
+            box-shadow: var(--glass-shadow-hover);
             transform: translateY(-2px);
         }
-        .btn-primary {
-            background-color: #4f46e5;
-            border-color: #4f46e5;
+
+        /* Navigation */
+        .navbar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 1rem 0;
         }
-        .btn-primary:hover {
-            background-color: #3730a3;
-            border-color: #3730a3;
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            color: var(--text-secondary) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.5rem 1rem !important;
+            margin: 0 0.25rem;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary) !important;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main content container */
+        .main-container {
+            padding: 2rem 0;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Alert styling */
+        .alert-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            box-shadow: var(--glass-shadow);
+            border-left: 4px solid transparent;
+        }
+
+        .alert-glass.alert-success {
+            border-left-color: #10b981;
+        }
+
+        .alert-glass.alert-danger {
+            border-left-color: #ef4444;
+        }
+
+        .alert-glass.alert-info {
+            border-left-color: var(--accent-blue);
+        }
+
+        /* Buttons */
+        .btn-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 0.7rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-glass:hover {
+            background: var(--glass-hover);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .btn-glass-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-glass-primary:hover {
+            color: white;
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-glass-danger {
+            background: linear-gradient(135deg, var(--accent-pink), #dc2626);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-glass-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 8px;
+        }
+
+        /* Form styling */
+        .form-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .form-control-glass {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-glass:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            color: var(--text-primary);
+        }
+
+        .form-control-glass::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-label-glass {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.25rem;
+            }
+            
+            .nav-link {
+                padding: 0.5rem 0.75rem !important;
+            }
+        }
+
+        /* Loading animations */
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: calc(200px + 100%) 0; }
+        }
+
+        .loading-shimmer {
+            animation: shimmer 2s linear infinite;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+            background-size: 200px 100%;
         }
     </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'flashcards:sets_list' %}">WaveSound</a>
+            <a class="navbar-brand" href="{% url 'flashcards:sets_list' %}">
+                <i class="fas fa-wave-square me-2"></i>StudyWaves
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'flashcards:home' %}">Home</a>
+                        <a class="nav-link" href="{% url 'flashcards:home' %}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'flashcards:sets_list' %}">All Sets</a>
-                    </li>
-                    {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'flashcards:create_set' %}">Create Set</a>
-                    </li>
-                    {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <span class="navbar-text">Hello, {{ user.username }}!</span>
+                        <span class="nav-link">
+                            <i class="fas fa-user me-1"></i>{{ user.username }}
+                        </span>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Login</a>
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
                     </li>
                     {% endif %}
                 </ul>
@@ -70,12 +303,12 @@
         </div>
     </nav>
 
-    <main class="container mt-4">
+    <main class="container main-container">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <div class="alert-glass alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
         {% endif %}
@@ -87,5 +320,3 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
-
-</content>

@@ -242,7 +242,6 @@
 
 {% block extra_js %}
 <script>
-    // Initialize flashcards
     const flashcardsData = {{ flashcards_json|safe }};
     let cards = flashcardsData.map(card => ({
         front: card.term,
@@ -257,7 +256,6 @@
     const cardCounter = document.getElementById("cardCounter");
     const progressBar = document.getElementById("studyProgress");
 
-    // Core functions
     function updateCard() {
         if (cards.length === 0) {
             cardFront.textContent = "No flashcards available";
@@ -299,7 +297,6 @@
     function shuffleCards() {
         if (cards.length === 0) return;
         
-        // Fisher-Yates shuffle algorithm
         for (let i = cards.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -311,7 +308,6 @@
         showToast("Cards shuffled!");
     }
 
-    // Helper function for notifications
     function showToast(message) {
         const toast = document.createElement("div");
         toast.className = "position-fixed bottom-0 start-50 translate-middle-x mb-4 p-3 bg-dark text-white rounded";
@@ -325,7 +321,6 @@
         }, 2000);
     }
 
-    // Touch events for mobile swipe
     let touchStartX = 0;
     const flashcardEl = document.querySelector('.flashcard');
 
@@ -337,11 +332,10 @@
         const touchEndX = e.changedTouches[0].clientX;
         const diff = touchEndX - touchStartX;
         
-        if (diff < -50) nextCard(); // Swipe left
-        if (diff > 50) prevCard();  // Swipe right
+        if (diff < -50) nextCard();
+        if (diff > 50) prevCard();
     }, { passive: true });
 
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         switch(e.key) {
             case 'ArrowLeft': prevCard(); break;
@@ -357,7 +351,6 @@
         }
     });
 
-    // Initialize
     updateCard();
 </script>
 {% endblock %}

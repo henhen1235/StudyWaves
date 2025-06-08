@@ -1,0 +1,26 @@
+{% extends 'flashcards/base.html' %}
+
+{% block title %}Delete Flashcard Set{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Delete Flashcard Set</h5>
+                <p class="card-text">
+                    Are you sure you want to delete the flashcard set 
+                    <strong>"{{ flashcard_set.title }}"</strong>?
+                </p>
+                <p class="text-muted">This action cannot be undone.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

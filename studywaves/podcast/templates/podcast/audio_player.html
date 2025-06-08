@@ -36,7 +36,7 @@
       background-color: #1e1e1e;
       padding: 30px;
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
       width: 100%;
       max-width: 400px;
       display: flex;
@@ -56,7 +56,7 @@
 
     .progress-bar {
       height: 100%;
-      background-color: #1DB954; /* Spotify green */
+      background-color: #1DB954;
       width: 0%;
       border-radius: 4px;
       transition: width 0.2s;
@@ -184,43 +184,99 @@
       color: #bbb;
     }
     
+    .input-container {
+      position: relative;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    
+    .mic-button {
+      background-color: #1DB954;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .mic-button:hover {
+      background-color: #1ed760;
+    }
+    
+    .mic-button svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+    
+    .mic-active {
+      background-color: #ff4040;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(255, 64, 64, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
+      }
+    }
   </style>
 </head>
-<body>
-  <h1>{{ podcast.title }}</h1>
-  <div class="player-container">
-    <audio id="audio"></audio>
+<body style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #581c87 50%, #be185d 75%, #dc2626 100%);">
+  <div class="container" style="background-color: rgba(255, 255, 255, 0.3) !important; padding: 100px !important; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
 
-    <div class="progress-container" id="progressContainer">
-      <div class="progress-bar" id="progressBar"></div>
+    <h1>{{ podcast.title }}</h1>
+    <div class="player-container">
+        <audio id="audio"></audio>
+
+        <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="time-display">
+        <span id="currentTime">0:00</span>
+        <span id="totalTime">0:00</span>
+        </div>
+
+        <div class="controls">
+        <button class="toggle-button" id="playPauseBtn">
+            <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="question-button" id="questionBtn">Ask a Question</button>
+        </div>
     </div>
 
-    <div class="time-display">
-      <span id="currentTime">0:00</span>
-      <span id="totalTime">0:00</span>
-    </div>
-
-    <div class="controls">
-      <button class="toggle-button" id="playPauseBtn">
-        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6zm8-14v14h4V5h-4z"/></svg>
-      </button>
-      <button class="question-button" id="questionBtn">Ask a Question</button>
-    </div>
-  </div>
-
-  <!-- Question Modal -->
-  <div class="question-modal" id="questionModal">
-    <div class="modal-content">
-      <div class="modal-header">Ask a Question</div>
-      <input type="text" class="modal-input" id="questionInput" placeholder="Type your question here...">
-      <div class="loading-indicator" id="loadingIndicator">
-        Generating response... This may take a moment.
-      </div>
-      <div class="modal-buttons">
-        <button class="modal-button cancel-button" id="cancelBtn">Cancel</button>
-        <button class="modal-button submit-button" id="submitBtn">Submit</button>
-      </div>
+    <div class="question-modal" id="questionModal">
+        <div class="modal-content">
+        <div class="modal-header">Ask a Question</div>
+        <div class="input-container">
+            <input type="text" class="modal-input" id="questionInput" placeholder="Type your question here...">
+            <button class="mic-button" id="micBtn">
+            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </button>
+        </div>
+        <div class="loading-indicator" id="loadingIndicator">
+            Generating response... This may take a moment.
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel-button" id="cancelBtn">Cancel</button>
+            <button class="modal-button submit-button" id="submitBtn">Submit</button>
+        </div>
+        </div>
     </div>
   </div>
 
@@ -239,6 +295,8 @@
     let isPlaying = false;
     let scriptContent = "";
     let originalAudioFiles = [...audioFiles];
+    let isRecording = false;
+    let recognition = null;
 
     const audio = document.getElementById('audio');
     const playPauseBtn = document.getElementById('playPauseBtn');
@@ -254,14 +312,74 @@
     const submitBtn = document.getElementById('submitBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const loadingIndicator = document.getElementById('loadingIndicator');
+    const micBtn = document.getElementById('micBtn');
 
-    // Load script content from the Django template
+    // Initialize speech recognition if available
+    function initSpeechRecognition() {
+      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = function(event) {
+          const transcript = event.results[0][0].transcript;
+          questionInput.value = transcript;
+          stopRecording();
+        };
+
+        recognition.onerror = function(event) {
+          console.error('Speech recognition error:', event.error);
+          stopRecording();
+        };
+
+        recognition.onend = function() {
+          stopRecording();
+        };
+
+        micBtn.addEventListener('click', toggleRecording);
+      } else {
+        micBtn.style.display = 'none';
+        console.log('Speech recognition not supported in this browser');
+      }
+    }
+
+    function toggleRecording() {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    }
+
+    function startRecording() {
+      if (recognition) {
+        try {
+          recognition.start();
+          isRecording = true;
+          micBtn.classList.add('mic-active');
+          questionInput.placeholder = "Listening...";
+        } catch (e) {
+          console.error('Error starting speech recognition:', e);
+        }
+      }
+    }
+
+    function stopRecording() {
+      if (recognition && isRecording) {
+        recognition.stop();
+        isRecording = false;
+        micBtn.classList.remove('mic-active');
+        questionInput.placeholder = "Type your question here...";
+      }
+    }
+
     function loadScript() {
       try {
-        // Get script content passed from the Django view
         scriptContent = `{{ script|escapejs }}`;
-        console.log("Script loaded successfully");
-      } catch (error) {
+      } 
+      catch (error) {
         console.error("Error loading script:", error);
       }
     }
@@ -269,6 +387,7 @@
     function formatTime(seconds) {
       const minutes = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
+
       return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
     }
 
@@ -277,6 +396,7 @@
         const tempAudio = new Audio();
         tempAudio.src = audioFiles[index];
         tempAudio.addEventListener('loadedmetadata', () => resolve(tempAudio.duration));
+
         tempAudio.addEventListener('error', () => resolve(0));
       });
     }
@@ -292,24 +412,28 @@
         const duration = await loadAudioMetadata(i);
         durations.push(duration);
         totalDuration += duration;
-        if (i > 0) timeOffsets.push(timeOffsets[i - 1] + durations[i - 1]);
+        if (i > 0) {
+            timeOffsets.push(timeOffsets[i - 1] + durations[i - 1]);
+        }
       }
       totalTimeDisplay.textContent = formatTime(totalDuration);
       
-      // Only load audio if not already loaded
       if (!audio.src || currentIndex >= audioFiles.length) {
         loadAudio(0);
       }
+      
+      // Initialize speech recognition
+      initSpeechRecognition();
     }
 
     function loadAudio(index) {
       if (index >= audioFiles.length) {
-        console.error("Trying to load audio index out of bounds:", index);
         return;
       }
       
       audio.src = audioFiles[index];
       audio.load();
+
       currentIndex = index;
       if (isPlaying) audio.play();
     }
@@ -324,10 +448,14 @@
     }
 
     function updateProgress() {
-      if (!isPlaying) return;
+      if (!isPlaying) {
+        return;
+      }
+
       const currentFileTime = audio.currentTime;
       const globalTime = timeOffsets[currentIndex] + currentFileTime;
       const progressPercent = (globalTime / totalDuration) * 100;
+
       progressBar.style.width = `${progressPercent}%`;
       currentTimeDisplay.textContent = formatTime(globalTime);
       requestAnimationFrame(updateProgress);
@@ -335,23 +463,24 @@
 
     function seekTo(globalTime) {
       const { index, offset } = findFileAtTime(globalTime);
-      if (index !== currentIndex) loadAudio(index);
+      if (index !== currentIndex) {
+        loadAudio(index);
+      }
       audio.currentTime = offset;
       currentTimeDisplay.textContent = formatTime(globalTime);
     }
 
-    // Split script based on current playback position
     function splitScriptAtCurrentPosition() {
-      if (!scriptContent) return { read: "", unread: "" };
-      
+      if (!scriptContent) {
+        return { read: "", unread: "" };
+      }
+
       const currentFileTime = audio.currentTime;
       const globalTime = timeOffsets[currentIndex] + currentFileTime;
       const progressPercent = globalTime / totalDuration;
       
-      // Estimate where in the script we are based on playback percentage
       const splitPosition = Math.floor(scriptContent.length * progressPercent);
       
-      // Find the nearest line break for a cleaner split
       let adjustedSplit = splitPosition;
       while (adjustedSplit < scriptContent.length && scriptContent[adjustedSplit] !== '\n') {
         adjustedSplit++;
@@ -363,23 +492,27 @@
       return { read, unread };
     }
 
-    // Auto-pause when question button is clicked
     questionBtn.addEventListener('click', () => {
-      // Pause the audio
       if (isPlaying) {
         audio.pause();
         isPlaying = false;
+
         playIcon.style.display = 'block';
         pauseIcon.style.display = 'none';
       }
       
       questionModal.style.display = "flex";
+      
+      // Make sure speech recognition is initialized when the modal opens
+      if (!recognition) {
+        initSpeechRecognition();
+      }
     });
 
-    // Submit question to the backend
     async function submitQuestion(question) {
       loadingIndicator.style.display = "block";
       questionInput.disabled = true;
+
       submitBtn.disabled = true;
       cancelBtn.disabled = true;
       
@@ -403,35 +536,29 @@
         if (response.ok) {
           const data = await response.json();
           
-          // Save current position
           const wasPlaying = isPlaying;
           const currentPosition = timeOffsets[currentIndex] + audio.currentTime;
           
-          // Insert the new audio files after the current file
           const staticPath = "{% static '' %}";
           const newAudioFiles = data.audioFiles.map(file => `${staticPath}${file}`);
           
-          // Important: update at the right position
           const updatedAudioFiles = [
             ...audioFiles.slice(0, currentIndex + 1),
             ...newAudioFiles,
             ...audioFiles.slice(currentIndex + 1)
           ];
           
-          // Update audio files array
-          audioFiles.length = 0; // Clear array
+          audioFiles.length = 0;
           updatedAudioFiles.forEach(file => audioFiles.push(file));
           
-          // Reinitialize player with new files
           await initializePlayer();
           
-          // Seek to the previous position
           seekTo(currentPosition);
           
-          // Restore play state if it was playing
           if (wasPlaying) {
             audio.play();
             isPlaying = true;
+
             playIcon.style.display = 'none';
             pauseIcon.style.display = 'block';
             updateProgress();
@@ -440,30 +567,32 @@
           questionModal.style.display = "none";
           questionInput.value = "";
           
-          console.log("Successfully added question response to playlist");
-        } else {
+        } 
+        else {
           const errorData = await response.json();
-          console.error("Error from server:", errorData);
           alert("Failed to process your question. Please try again.");
         }
-      } catch (error) {
-        console.error("Error submitting question:", error);
+      } 
+      catch (error) {
         alert("An error occurred. Please try again.");
-      } finally {
+      } 
+      finally {
         loadingIndicator.style.display = "none";
+
         questionInput.disabled = false;
         submitBtn.disabled = false;
         cancelBtn.disabled = false;
       }
     }
 
-    // Get CSRF token from cookies
     function getCookie(name) {
       let cookieValue = null;
       if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
+
         for (let i = 0; i < cookies.length; i++) {
           const cookie = cookies[i].trim();
+
           if (cookie.substring(0, name.length + 1) === (name + '=')) {
             cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
             break;
@@ -477,11 +606,14 @@
       if (isPlaying) {
         audio.pause();
         isPlaying = false;
+
         playIcon.style.display = 'block';
         pauseIcon.style.display = 'none';
-      } else {
+      } 
+      else {
         audio.play();
         isPlaying = true;
+
         playIcon.style.display = 'none';
         pauseIcon.style.display = 'block';
         updateProgress();
@@ -492,8 +624,10 @@
       if (currentIndex < audioFiles.length - 1) {
         currentIndex++;
         loadAudio(currentIndex);
-      } else {
+      } 
+      else {
         isPlaying = false;
+
         playIcon.style.display = 'block';
         pauseIcon.style.display = 'none';
       }
@@ -502,34 +636,47 @@
     progressContainer.addEventListener('click', (e) => {
       const rect = progressContainer.getBoundingClientRect();
       const clickPosition = e.clientX - rect.left;
+
       const clickPercent = clickPosition / rect.width;
       const globalTime = totalDuration * clickPercent;
       seekTo(globalTime);
     });
-
+    
     cancelBtn.addEventListener('click', () => {
+      stopRecording();
       questionModal.style.display = "none";
       questionInput.value = "";
     });
 
     submitBtn.addEventListener('click', () => {
       const question = questionInput.value.trim();
+
       if (question) {
         submitQuestion(question);
-      } else {
+      } 
+      else {
         alert("Please enter a question");
       }
     });
 
-    // Close modal when clicking outside
     questionModal.addEventListener('click', (e) => {
       if (e.target === questionModal) {
+        stopRecording();
         questionModal.style.display = "none";
         questionInput.value = "";
       }
     });
 
-    // Initialize player
+    // Add keyboard event listener for the question input
+    questionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const question = questionInput.value.trim();
+        if (question) {
+          submitQuestion(question);
+        }
+      }
+    });
+
     initializePlayer();
   });
 </script>

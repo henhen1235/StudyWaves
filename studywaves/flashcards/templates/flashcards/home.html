@@ -1,93 +1,155 @@
-<!-- flashcards/templates/flashcards/home.html -->
 {% extends 'flashcards/base.html' %}
-{% load static %}
 
 {% block content %}
-<div class="container">
-    <h1 class="my-4">Podcasts</h1>
-    <div class="row">
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h2>Podcast Flashcards</h2>
+        <!-- {% if user.is_authenticated %} -->
+        <a href="/create-podcast/" class="btn btn-primary btn-sm">New Podcast</a>
+        <!-- {% endif %} -->
+    </div>
+
+    <div class="list-group">
         {% for podcast in podcasts %}
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">{{ podcast.title }}</h5>
-                    <p class="card-text">{{ podcast.description|truncatechars:100 }}</p>
-                    
-                    <!-- Check if flashcards exist for this podcast -->
-                    {% with flashcard_set=podcast.flashcardset_set.first %}
-                        {% if flashcard_set %}
-                            <a href="{% url 'flashcards:set_detail' flashcard_set.id %}" 
-                               class="btn btn-success study-btn" 
-                               data-podcast-id="{{ podcast.id }}">
-                                Study Flashcards
-                            </a>
-                        {% else %}
-                            <button class="btn btn-primary generate-btn" 
-                                    data-podcast-id="{{ podcast.id }}">
-                                Generate Flashcards
-                            </button>
-                        {% endif %}
-                    {% endwith %}
-                    
+        <div class="list-group-item mb-2" style="background-color: rgba(248, 249, 250, 0.2); border-radius: 0.5rem; color:white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1" style="color:white">{{ podcast.title }}</h5>
+                    <small class="text-muted" style="color:white !important">Added {{ podcast.created_at|date:"M d" }}</small>
+                </div>
+                
+                <div>
                     <a href="{% url 'flashcards:podcast_redirect' podcast.id %}" 
-                       class="btn btn-outline-secondary">
+                       class="btn btn-outline-dark btn-sm me-1">
                         Listen
                     </a>
+                    
+                    {% if podcast.flashcard_set %}
+                    <a href="{% url 'flashcards:set_detail' podcast.flashcard_set.id %}" 
+                       class="btn btn-primary btn-sm">
+                        Flashcards ({{ podcast.flashcard_set.flashcards.count }})
+                    </a>
+                    {% else %}
+                    <button class="btn btn-success btn-sm generate-btn" 
+                            data-podcast-id="{{ podcast.id }}"
+                            data-podcast-title="{{ podcast.title }}">
+                        Generate
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
+
+    <div id="messageAlert" class="alert alert-dismissible fade" style="display: none;" role="alert">
+        <span id="messageText"></span>
+        <button type="button" class="btn-close" onclick="hideAlert()"></button>
+    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle generate button clicks
-    document.querySelectorAll('.generate-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showMessage(message, type) {
+        const alertDiv = document.getElementById('messageAlert');
+        const messageText = document.getElementById('messageText');
+        
+        messageText.textContent = message;
+        
+        alertDiv.className = 'alert alert-dismissible fade show';
+        
+        if (type === 'success') {
+            alertDiv.classList.add('alert-success');
+        } 
+        else if (type === 'error') {
+            alertDiv.classList.add('alert-danger');
+        } 
+        else {
+            alertDiv.classList.add('alert-info');
+        }
+        
+        alertDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            hideAlert();
+        }, 5000);
+    }
+    
+    function hideAlert() {
+        const alertDiv = document.getElementById('messageAlert');
+        alertDiv.style.display = 'none';
+    }
+    
+    window.hideAlert = hideAlert;
+
+    const generateButtons = document.querySelectorAll('.generate-btn');
+    
+    generateButtons.forEach(button => {
+        button.addEventListener('click', function() {
             const podcastId = this.getAttribute('data-podcast-id');
-            const btn = this;
+            const podcastTitle = this.getAttribute('data-podcast-title');
             
-            // Show loading state
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+            this.disabled = true;
+            this.textContent = 'Generating...';
             
-            // Get CSRF token
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const formData = new FormData();
+            formData.append('title', `Flashcards from ${podcastTitle}`);
+            formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
             
-            // Make the AJAX request
-            fetch(`{% url 'flashcards:generate_from_podcast' 0 %}`.replace('0', podcastId), {
+            fetch(`/flashcards/podcast/${podcastId}/generate/`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: `title=Flashcards from Podcast ${podcastId}`
+                body: formData
             })
             .then(response => {
-                if (response.redirected) {
-                    // Follow the redirect
-                    window.location.href = response.url;
-                } else if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
-                    // Reload the page to show the new Study button
-                    window.location.reload();
+                    showMessage(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = `/flashcards/sets/${data.set_id}/`;
+                    }, 1500);
                 } else {
-                    alert('Error: ' + data.error);
+                    showMessage(data.error, 'error');
+                    this.disabled = false;
+                    this.textContent = 'Generate';
+                    
+                    if (data.set_id) {
+                        setTimeout(() => {
+                            window.location.href = `/sets/${data.set_id}/`;
+                        }, 2000);
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while generating flashcards');
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.textContent = 'Generate Flashcards';
+                showMessage('Failed to generate flashcards. Please try again.', 'error');
+
+                this.disabled = false;
+                this.textContent = 'Generate';
             });
         });
     });

@@ -1,4 +1,3 @@
-<!-- flashcards/templates/flashcards/set_detail.html -->
 {% extends 'flashcards/base.html' %}
 
 {% block title %}{{ flashcard_set.title }}{% endblock %}
@@ -14,7 +13,7 @@
                 {% endif %}
                 <p class="card-text">
                     <small class="text-muted">
-                        Created by {{ flashcard_set.created_by.username }} on {{ flashcard_set.created_at|date:"M d, Y" }}
+                        Created on {{ flashcard_set.created_at|date:"M d, Y" }}
                         • {{ total_cards }} cards
                     </small>
                 </p>
@@ -23,11 +22,9 @@
                     <a href="{% url 'flashcards:study' flashcard_set.id %}" class="btn btn-primary btn-lg me-2">
                         📖 Study Flashcards
                     </a>
-                    {% if user == flashcard_set.created_by %}
                     <a href="{% url 'flashcards:delete_set' flashcard_set.id %}" class="btn btn-outline-danger">
                         🗑️ Delete Set
                     </a>
-                    {% endif %}
                 </div>
             </div>
         </div>

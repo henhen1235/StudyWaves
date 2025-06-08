@@ -134,16 +134,23 @@ AUTHENTICATION_BACKENDS = (
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com'
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+# SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+#     'https://www.googleapis.com/auth/drive.readonly',
+#     'email',
+#     'profile',
+# ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/drive.readonly',
-    'email',
-    'profile',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid'
 ]
 
 # Request offline access to get refresh tokens
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
     'access_type': 'offline',
-    'approval_prompt': 'force'  # Force approval prompt to ensure refresh token is issued
+    # 'approval_prompt': 'force'  # Force approval prompt to ensure refresh token is issued
+    'prompt': 'consent'  # Use 'consent' to ensure refresh token is issued
 }
 
 # Store refresh token in extra_data

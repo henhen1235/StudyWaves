@@ -1,7 +1,6 @@
-# flashcards/models.py
 from django.db import models
 from django.contrib.auth.models import User
-from podcast.models import Podcast  # Add this import
+from podcast.models import Podcast
 
 class FlashcardSet(models.Model):
     title = models.CharField(max_length=200)
@@ -9,7 +8,7 @@ class FlashcardSet(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    podcast = models.ForeignKey(Podcast, null=True, blank=True, on_delete=models.SET_NULL)  # Add this field
+    podcast = models.ForeignKey(Podcast, null=True, blank=True, on_delete=models.SET_NULL)
     
     def __str__(self):
         return self.title

@@ -5,7 +5,7 @@ from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from django.http import JsonResponse, HttpResponseForbidden
 from googleapiclient.errors import HttpError
-import google.generativeai as genai  # Add this import for Gemini
+import google.generativeai as genai
 import PyPDF2
 import docx
 import io
@@ -19,14 +19,13 @@ import sys
 import requests
 from pydub import AudioSegment
 from dotenv import load_dotenv
-from murf import Murf  # Import the Murf library
-from . models import Podcast, Segment  # Import your PodcastFile model
+from murf import Murf 
+from . models import Podcast, Segment
 import shutil
 
 
 load_dotenv()
 
-# Configure the Gemini API with your key
 genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 @login_required
@@ -158,27 +157,20 @@ def get_file_content(request, file_id):
 def audio_player(request, podcast_id):
     podcast = get_object_or_404(Podcast, id=podcast_id)
     
-    # Get all segments for this podcast
     segments = list(Segment.objects.filter(podcast=podcast).values_list('path', flat=True))
     
-    # Sort segments by the number after 'male' or 'female'
     def extract_number(path):
-        # Extract the filename from the path
         filename = path.split('/')[-1]
-        # Extract the number after 'male_' or 'female_'
         if 'male_' in filename:
             return int(filename.split('male_')[1].split('.')[0])
         elif 'female_' in filename:
             return int(filename.split('female_')[1].split('.')[0])
-        return 0  # Default case
+        return 0
     
-    # Sort segments by the extracted number
     sorted_segments = sorted(segments, key=extract_number)
     
-    # Pass the script to the template if needed
     script = podcast.script
     print(sorted_segments)
-    # Pass the segments directly to the template
     return render(request, 'podcast/audio_player.html', {
         'files': sorted_segments,
         'podcast': podcast,
@@ -186,8 +178,6 @@ def audio_player(request, podcast_id):
     })
 
 
-# Add this function to your views.py file
-# @csrf_exempt
 def ask_question(request):
     folder = '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/questions'
     for filename in os.listdir(folder):
@@ -198,52 +188,43 @@ def ask_question(request):
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
         except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
-        if request.method != 'POST':
-            return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+            if request.method != 'POST':
+                return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
     
     try:
-        # Parse the request data
         data = json.loads(request.body)
         read_content = data.get('read', '')
         unread_content = data.get('unread', '')
         question = data.get('question', '')
         
-        # Validate input
         if not question:
             return JsonResponse({'error': 'Question cannot be empty'}, status=400)
         
-        # Load environment variables for API keys
         load_dotenv()
         
-        # Prepare directories - use a relative path that matches your static file setup
         questions_dir = '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/questions'
         if not os.path.exists(questions_dir):
             os.makedirs(questions_dir)
             
-        # Clear existing files
         for file in os.listdir(questions_dir):
             file_path = os.path.join(questions_dir, file)
             if os.path.isfile(file_path):
                 os.remove(file_path)
         
-        # Generate response script using Gemini
         response_script = generate_response_script(read_content, unread_content, question)
         if not response_script:
             return JsonResponse({'error': 'Failed to generate response script'}, status=500)
         
-        # Convert script to audio files
         audio_files = generate_audio_files(response_script, questions_dir)
         if not audio_files:
             return JsonResponse({'error': 'Failed to generate audio files'}, status=500)
         
-        # Return the relative paths to use with static files
         file_paths = [f'AI/questions/{filename}' for filename in audio_files]
         
         return JsonResponse({
             'success': True,
             'message': 'Response generated successfully',
-            'audioFiles': file_paths,  # Using the correct relative paths
+            'audioFiles': file_paths, 
             'responseText': response_script
         })
             
@@ -253,17 +234,11 @@ def ask_question(request):
         return JsonResponse({'error': f'Unexpected error: {str(e)}'}, status=500)
 
 def generate_response_script(read, unread, question):
-    """
-    Generate a podcast script segment that answers the user's question
-    while maintaining continuity with existing content.
-    """
     try:
-        # Initialize Gemini API
-        genai.api_key = os.environ.get("GOOGLE_API_KEY") # Add this line
+        genai.api_key = os.environ.get("GOOGLE_API_KEY")
         genai.configure(api_key=genai.api_key)
         model = genai.GenerativeModel("gemini-2.5-flash-preview-05-20")
         
-        # Create the prompt
         prompt = f"""
 You are a helpful and creative podcast script editor.
 
@@ -287,48 +262,37 @@ Format your response as a podcast script with speaker labels:
 Keep it concise and engaging, around 1-2 exchanges between speakers.
 """
 
-        # Generate the response
         response = model.generate_content(prompt)
         return response.text
         
     except Exception as e:
-        print(f"Error generating script: {e}")
         return None
 
 def generate_audio_files(script, output_dir):
-    """
-    Convert the script into audio files using text-to-speech.
-    Creates separate files for each speaker turn.
-    """
     try:
-        # Split script into lines
         lines = script.strip().split('\n')
         audio_files = []
         file_index = 0
         
         for line in lines:
             line = line.strip()
-            if not line:  # Skip empty lines
+            if not line:
                 continue
                 
             if "**Speaker 1:**" in line:
-                # Female voice
                 text = line.replace("**Speaker 1:**", "").strip()
                 filename = f"female_{file_index}.mp3"
                 file_path = os.path.join(output_dir, filename)
                 
-                # Generate female voice audio
                 generate_female_voice(text, file_path)
                 audio_files.append(filename)
                 file_index += 1
                 
             elif "**Speaker 2:**" in line:
-                # Male voice
                 text = line.replace("**Speaker 2:**", "").strip()
                 filename = f"male_{file_index}.mp3"
                 file_path = os.path.join(output_dir, filename)
                 
-                # Generate male voice audio
                 generate_male_voice(text, file_path)
                 audio_files.append(filename)
                 file_index += 1
@@ -340,27 +304,20 @@ def generate_audio_files(script, output_dir):
         return []
 
 def generate_female_voice(text, output_path):
-    """
-    Generate female voice audio using MurfAI Python library
-    """
     try:
-        # Initialize Murf client
         client = Murf(api_key=os.environ.get("MURF_API_KEY"))
 
-        # Generate speech using Murf
         response = client.text_to_speech.generate(
             text=text,
-            voice_id="en-US-natalie",  # Same as in your merge.py
+            voice_id="en-US-natalie", 
             style="Conversational",
             multi_native_locale="en-US"
         )
 
-        # Download and save the audio file
         try:
             audio_response = requests.get(response.audio_file)
             audio_response.raise_for_status()
             
-            # Save the audio file
             with open(output_path, 'wb') as f:
                 f.write(audio_response.content)
             
@@ -374,7 +331,6 @@ def generate_female_voice(text, output_path):
     except Exception as e:
         print(f"Error generating female voice with MurfAI: {e}")
         
-        # Try using the function from merge.py as fallback
         try:
             ai_dir = '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI'
             if ai_dir not in sys.path:
@@ -386,34 +342,26 @@ def generate_female_voice(text, output_path):
         except Exception as fallback_error:
             print(f"Fallback error: {fallback_error}")
             
-            # Last resort: Create a silent file with some length
             with open(output_path, 'wb') as f:
                 silence = AudioSegment.silent(duration=3000)
                 silence.export(output_path, format="mp3")
             return False
 
 def generate_male_voice(text, output_path):
-    """
-    Generate male voice audio using MurfAI Python library
-    """
     try:
-        # Initialize Murf client
         client = Murf(api_key=os.environ.get("MURF_API_KEY"))
 
-        # Generate speech using Murf
         response = client.text_to_speech.generate(
             text=text,
-            voice_id="en-US-charles",  # Same as in your merge.py
+            voice_id="en-US-charles", 
             style="Conversational",
             multi_native_locale="en-US"
         )
 
-        # Download and save the audio file
         try:
             audio_response = requests.get(response.audio_file)
             audio_response.raise_for_status()
             
-            # Save the audio file
             with open(output_path, 'wb') as f:
                 f.write(audio_response.content)
             
@@ -427,7 +375,6 @@ def generate_male_voice(text, output_path):
     except Exception as e:
         print(f"Error generating male voice with MurfAI: {e}")
         
-        # Try using the function from merge.py as fallback
         try:
             ai_dir = '/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/AI'
             if ai_dir not in sys.path:
@@ -439,7 +386,6 @@ def generate_male_voice(text, output_path):
         except Exception as fallback_error:
             print(f"Fallback error: {fallback_error}")
             
-            # Last resort: Create a silent file with some length
             with open(output_path, 'wb') as f:
                 silence = AudioSegment.silent(duration=3000)
                 silence.export(output_path, format="mp3")
@@ -478,17 +424,14 @@ Format the output like a real podcast script with speaker labels (e.g., Speaker 
 
 def create_podcast(request):
     if request.method == 'POST' and request.FILES.get('file'):
-        # Get the uploaded file and topic
         uploaded_file = request.FILES['file']
         topic = request.POST.get('topic', 'General Topic')
         duration = request.POST.get('duration', '3')
         print(duration)
         
         try:
-            # Send the file directly to Gemini
             model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
             
-            # Create a prompt that instructs Gemini what to do with the file content
             prompt = f"""    
              You are a podcast writer helping the user turn their notes and documents into an engaging and accurate podcast script between two people.
 Use the provided source material ({topic}) to write a script that sounds natural, conversational, and informative.
@@ -502,13 +445,11 @@ Format the output like a real podcast script with speaker labels (e.g., Speaker 
             **Speaker 2:** That's right! We'll be diving deep into the nuances of {topic} and discussing...
             """
 
-            # Send the file content and prompt to Gemini
             response = model.generate_content([
                 prompt,
                 {"mime_type": "text/plain", "data": uploaded_file.read()}
             ])
             
-            # Return the generated podcast script
             podcast_script = response.text
             
             podcast = Podcast.objects.create(
@@ -526,9 +467,7 @@ Format the output like a real podcast script with speaker labels (e.g., Speaker 
             print("Created podcast:", podcast.id)
             files = os.listdir('/Users/aditya/Documents/Programming/Hackathon/KTHACKS/StudyWaves/studywaves/static/AI/podcasts/' + str(podcast.id))
             for file in files:
-                # Create the correct absolute path to the audio file
                 file_path = 'AI/podcasts/' + str(podcast.id) + '/' + file
-                # Create a new AudioSegment model instance
                 segment = Segment(
                     podcast=podcast,
                     path=file_path
@@ -543,5 +482,4 @@ Format the output like a real podcast script with speaker labels (e.g., Speaker 
             error_message = f"Error generating podcast: {str(e)}"
             return render(request, 'podcast/create_podcast.html', {'error': error_message})
 
-    # If not POST or no file, just show the form
     return render(request, 'podcast/create_podcast.html')

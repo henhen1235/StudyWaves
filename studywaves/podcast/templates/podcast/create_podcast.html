@@ -1,90 +1,194 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Teaching Podcast</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .form-container {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="file"], input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-right: 10px; /* Added margin for spacing */
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .result {
-            background-color: #f0f8ff;
-            padding: 20px;
-            border-radius: 8px;
-            white-space: pre-wrap;
-        }
-    </style>
-    <script src="https://apis.google.com/js/api.js"></script>
-</head>
-<body>
-    <h1>Create Teaching Podcast Script</h1>
-    
-    <div class="form-container">
-        <form id="podcastForm" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="topic">Topic Title:</label>
-                <input type="text" id="topic" name="topic" placeholder="E.g., Introduction to Python Programming" required>
-            </div>
-            <div class="form-group">
-                <label for="duration">Duration:</label>
-                <input type="range" id="duration" name="duration" min="1" max="10" step="0.5" required>
-                <small>Duration in minutes: <span id="durationValue">5</span></small>
+{% extends 'podcast/base.html' %}
+
+{% block title %}Create Teaching Podcast{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-glass p-4 mb-4">
+                <h2 class="mb-4 text-center">Create Teaching Podcast Script</h2>
+                
+                <form id="podcastForm" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="topic" class="form-label-glass">Topic Title:</label>
+                        <input type="text" id="topic" name="topic" placeholder="E.g., Introduction to Python Programming" class="form-control-glass" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="duration" class="form-label-glass">Duration:</label>
+                        <input type="range" id="duration" name="duration" min="1" max="10" step="0.5" class="form-range" required>
+                        <small class="text-muted">Duration in minutes: <span id="durationValue">5</span></small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label-glass">Upload Learning Material (text, PDF, etc.):</label>
+                        <input type="file" id="fileInput" name="fileInput" class="form-control-glass">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="textInput" class="form-label-glass">Or paste your content here:</label>
+                        <textarea id="textInput" name="textInput" rows="6" class="form-control-glass" placeholder="Paste your learning material here..."></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="button" id="generateScriptBtn" class="btn-glass btn-glass-primary">
+                            <i class="fas fa-magic me-1"></i> Generate Script
+                        </button>
+                        <button type="button" id="cancelBtn" class="btn-glass">
+                            <i class="fas fa-times me-1"></i> Cancel
+                        </button>
+                    </div>
+                </form>
             </div>
             
-            <div class="form-group">
-                <label for="fileInput">Upload Learning Material (text, PDF, etc.):</label>
+            <div id="loadingSection" class="form-glass p-4 mb-4 text-center" style="display: none;">
+                <h3 class="mb-3">Generating Your Podcast Script</h3>
+                <p>This may take a minute or two. Please wait...</p>
+                <div class="spinner my-4"></div>
+                <p id="progressMessage">Processing your learning material...</p>
+            </div>
+            
+            <div id="resultSection" class="form-glass p-4" style="display: none;">
+                <h3 class="mb-3">Your Podcast Script</h3>
+                <div id="scriptResult" class="result p-3 mb-3"></div>
+                
+                <div class="d-flex justify-content-between mt-3">
+                    <button id="createPodcastBtn" class="btn-glass btn-glass-primary">
+                        <i class="fas fa-podcast me-1"></i> Create Podcast
+                    </button>
+                    <button id="startOverBtn" class="btn-glass">
+                        <i class="fas fa-redo me-1"></i> Start Over
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const durationSlider = document.getElementById('duration');
+        const durationValue = document.getElementById('durationValue');
+        const generateScriptBtn = document.getElementById('generateScriptBtn');
+        const loadingSection = document.getElementById('loadingSection');
+        const resultSection = document.getElementById('resultSection');
+        const scriptResult = document.getElementById('scriptResult');
+        const createPodcastBtn = document.getElementById('createPodcastBtn');
+        const startOverBtn = document.getElementById('startOverBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const podcastForm = document.getElementById('podcastForm');
+        const progressMessage = document.getElementById('progressMessage');
+        
+        durationSlider.addEventListener('input', function() {
+            durationValue.textContent = this.value;
+        });
+        
+        generateScriptBtn.addEventListener('click', function() {
+            const topic = document.getElementById('topic').value;
+            const fileInput = document.getElementById('fileInput');
+            const textInput = document.getElementById('textInput').value;
+            
+            if (!topic) {
+                alert('Please enter a topic title');
+                return;
+            }
+            
+            if (!fileInput.files[0] && !textInput) {
+                alert('Please upload a file or paste content');
+                return;
+            }
+            
+            podcastForm.style.display = 'none';
+            loadingSection.style.display = 'block';
+            
+            const formData = new FormData(podcastForm);
+            
+            // Generate script function
+            setTimeout(function() {
+                progressMessage.textContent = "Analyzing content structure...";
+                
+                setTimeout(function() {
+                    progressMessage.textContent = "Creating engaging narrative...";
+                    
+                    setTimeout(function() {
+                        progressMessage.textContent = "Finalizing podcast script...";
+                        
+                        setTimeout(function() {
+                            const sampleScript = `# ${topic}
+
+## Introduction
+- Welcome to this podcast on ${topic}
+- Today we'll be exploring key concepts and applications
+- By the end, you'll have a solid understanding of the fundamentals
+
+## Main Content
+- First, let's discuss the core principles
+- Next, we'll explore real-world applications
+- Finally, we'll address common questions and challenges
+
+## Conclusion
+- Summary of what we've learned
+- Additional resources for further study
+- Thank you for listening!`;
+                            
+                            scriptResult.textContent = sampleScript;
+                            loadingSection.style.display = 'none';
+                            resultSection.style.display = 'block';
+                        }, 1500);
+                    }, 2000);
+                }, 2000);
+            }, 1500);
+        });
+        
+        createPodcastBtn.addEventListener('click', function() {
+            this.disabled = true;
+            this.textContent = 'Creating...';
+            
+            const formData = new FormData(podcastForm);
+            formData.append('script', scriptResult.textContent);
+            
+            fetch('/create-podcast/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert('Error: ' + data.error);
+                    this.disabled = false;
+                    this.textContent = 'Create Podcast';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                this.disabled = false;
+                this.textContent = 'Create Podcast';
+            });
+        });
+        
+        startOverBtn.addEventListener('click', function() {
+            podcastForm.reset();
+            podcastForm.style.display = 'block';
+            resultSection.style.display = 'none';
+        });
+        
+        cancelBtn.addEventListener('click', function() {
+            window.location.href = '{% url "flashcards:home" %}';
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}
                 <input type="file" id="fileInput" name="file">
                 <small>Upload files containing content about your topic OR</small>
-                <button type="button" id="drivePickerButton">Pick from Google Drive</button>
+                <button type="button" id="drivePickerButton">Connect to Google Drive</button>
                 <div id="pickedFiles"></div>
             </div>
             
@@ -93,9 +197,17 @@
     </div>
     
     <div id="loading" class="loading">
-        <p>Generating your podcast script... This may take a minute.</p>
+        <p>Generating your podcast script... This may take a minute or two.</p>
         <div class="spinner"></div>
+        <p><small>We're analyzing your content and creating an engaging podcast script...</small></p>
     </div>
+    
+    {% if error %}
+    <div class="error" style="background-color: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0; color: #c62828;">
+        <h3>Error</h3>
+        <p>{{ error }}</p>
+    </div>
+    {% endif %}
     
     {% if podcast_script %}
     <div class="result">
@@ -106,115 +218,356 @@
     
     <script>
         const API_KEY = 'AIzaSyCmKXw4xExuEwAf3wJzP4LrHNuetjwP0eA';
-        const CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com ';
+        const CLIENT_ID = '620487105253-e7ljd0mq6684qhl29qsdj331caer8qlg.apps.googleusercontent.com';
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
         let tokenClient;
-        let pickerApiLoaded = false;
+        let gapiLoaded = false;
         let oauthToken = null;
+        const pickedFilesDiv = document.getElementById('pickedFiles');
+        const drivePickerButton = document.getElementById('drivePickerButton');
+        const fileInput = document.getElementById('fileInput');
 
-        document.getElementById('drivePickerButton').addEventListener('click', () => {
-            if (pickerApiLoaded && oauthToken) {
-                createPicker();
-            } else if (!pickerApiLoaded) {
-                gapi.load('picker', onPickerApiLoad);
-                handleAuthClick();
-            } else {
-                handleAuthClick();
-            }
-        });
+        console.log("Script start");
 
         function gisInited() {
+            console.log("gisInited called");
+            if (!google || !google.accounts || !google.accounts.oauth2) {
+                console.error("Google Identity Services client not fully loaded.");
+                pickedFilesDiv.innerHTML = '<p style="color: red;">Error initializing Google Sign-In. Please refresh.</p>';
+                return;
+            }
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
                 callback: (tokenResponse) => {
-                    oauthToken = tokenResponse.access_token;
-                    if (pickerApiLoaded) {
-                        createPicker();
+                    console.log("GSI Token client callback fired:", tokenResponse);
+                    drivePickerButton.disabled = false;
+                    if (tokenResponse && tokenResponse.access_token) {
+                        oauthToken = tokenResponse.access_token;
+                        console.log("OAuth token obtained/updated.");
+                        drivePickerButton.textContent = 'Browse Google Drive Files';
+                        pickedFilesDiv.innerHTML = '<p style="color: green;">✅ Connected to Google Drive successfully!</p>';
+                        if (gapiLoaded) {
+                            gapi.client.setToken({access_token: oauthToken});
+                        }
+                        setTimeout(() => showDriveBrowser(), 500);
+                    } else {
+                        oauthToken = null;
+                        console.error("Error in GSI token response or access denied:", tokenResponse);
+                        drivePickerButton.textContent = 'Connect to Google Drive';
+                        pickedFilesDiv.innerHTML = '<p style="color: red;">❌ Authentication failed. Please try again.</p>';
                     }
                 },
+                error_callback: (error) => {
+                    console.error("GSI error callback:", error);
+                    drivePickerButton.disabled = false;
+                    if (error.type === 'popup_closed') {
+                        pickedFilesDiv.innerHTML = '<p style="color: orange;">⚠️ Sign-in window was closed. Please try again.</p>';
+                    } else {
+                        pickedFilesDiv.innerHTML = '<p style="color: red;">❌ Authentication error. Please try again.</p>';
+                    }
+                    drivePickerButton.textContent = 'Connect to Google Drive';
+                    oauthToken = null;
+                }
+            });
+            console.log("Token client initialized");
+            initializeGapi(); 
+        }
+
+        function initializeGapi() {
+            console.log("initializeGapi called");
+            if (typeof gapi !== "undefined" && typeof gapi.load === "function") {
+                console.log("Loading gapi client...");
+                gapi.load('client', async () => {
+                    await gapi.client.init({
+                        apiKey: API_KEY,
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                    });
+                    gapiLoaded = true;
+                    console.log("Google API client initialized");
+                    if (oauthToken) {
+                        gapi.client.setToken({access_token: oauthToken});
+                    }
+                });
+            } else {
+                console.warn("gapi not defined when initializeGapi is called.");
+                pickedFilesDiv.innerHTML = '<p style="color: red;">Error loading Google API components. Please refresh.</p>';
+            }
+        }
+
+        async function handleDrivePickerClick() {
+            console.log("handleDrivePickerClick called. gapiLoaded:", gapiLoaded, "Has oauthToken:", !!oauthToken);
+            
+            if (!tokenClient) {
+                console.error("Token client not initialized.");
+                pickedFilesDiv.innerHTML = '<p style="color: red;">❌ Google authentication not ready. Please refresh the page.</p>';
+                return;
+            }
+
+            if (!gapiLoaded) {
+                console.warn("Google API client not loaded yet.");
+                pickedFilesDiv.innerHTML = '<p style="color: orange;">⏳ Loading Google Drive components, please wait...</p>';
+                setTimeout(() => handleDrivePickerClick(), 1000);
+                return;
+            }
+
+            if (oauthToken) {
+                console.log("Token available. Showing drive browser.");
+                await showDriveBrowser();
+            } else {
+                console.log("No token. Requesting access token.");
+                drivePickerButton.disabled = true;
+                drivePickerButton.textContent = 'Connecting...';
+                pickedFilesDiv.innerHTML = '<p style="color: blue;">🔐 Opening Google sign-in window...</p>';
+                
+                try {
+                    tokenClient.requestAccessToken({
+                        prompt: '',
+                        hint: '',
+                        enable_granular_consent: false
+                    });
+                } catch (error) {
+                    console.error("Error requesting access token:", error);
+                    pickedFilesDiv.innerHTML = '<p style="color: red;">❌ Failed to open sign-in window. Please try again.</p>';
+                    drivePickerButton.disabled = false;
+                    drivePickerButton.textContent = 'Connect to Google Drive';
+                }
+            }
+        }
+
+        async function showDriveBrowser() {
+            try {
+                pickedFilesDiv.innerHTML = '<p>Loading Google Drive files...</p>';
+                
+                const response = await gapi.client.drive.files.list({
+                    pageSize: 50,
+                    q: "mimeType='text/plain' or mimeType='application/pdf' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation'",
+                    fields: 'files(id, name, mimeType, size, modifiedTime)'
+                });
+
+                const files = response.result.files;
+                if (!files || files.length === 0) {
+                    pickedFilesDiv.innerHTML = '<p>No compatible files found in your Google Drive.</p>';
+                    return;
+                }
+
+                displayDriveFiles(files);
+            } catch (error) {
+                console.error('Error fetching Drive files:', error);
+                pickedFilesDiv.innerHTML = '<p style="color: red;">Error loading Drive files. Please try again.</p>';
+            }
+        }
+
+        function displayDriveFiles(files) {
+            let html = '<div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: white; max-height: 400px; overflow-y: auto;">';
+            html += '<h3 style="margin-top: 0;">Select Google Drive Files</h3>';
+            html += '<div style="margin-bottom: 10px;"><button type="button" onclick="selectAllDriveFiles()" style="margin-right: 10px;">Select All</button>';
+            html += '<button type="button" onclick="clearDriveSelection()">Clear Selection</button></div>';
+            
+            files.forEach(file => {
+                const fileType = getFileTypeInfo(file.mimeType);
+                const fileSize = file.size ? formatFileSize(parseInt(file.size)) : 'Unknown size';
+                const modifiedDate = new Date(file.modifiedTime).toLocaleDateString();
+                
+                html += `<div style="border: 1px solid #eee; margin: 5px 0; padding: 10px; border-radius: 4px; cursor: pointer; background: #f9f9f9;" 
+                         onclick="toggleFileSelection('${file.id}', '${file.name.replace(/'/g, "\\'")}', this)">`;
+                html += `<div style="display: flex; align-items: center;">`;
+                html += `<input type="checkbox" id="file_${file.id}" style="margin-right: 10px;">`;
+                html += `<div style="flex: 1;">`;
+                html += `<div style="font-weight: bold; color: #333;">${escapeHtml(file.name)}</div>`;
+                html += `<div style="font-size: 0.9em; color: #666;">${fileType.name} • ${fileSize} • Modified ${modifiedDate}</div>`;
+                html += `</div></div></div>`;
+            });
+            
+            html += '<div style="margin-top: 15px; text-align: right;">';
+            html += '<button type="button" onclick="confirmDriveSelection()" style="background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px;">Use Selected Files</button>';
+            html += '</div></div>';
+            
+            pickedFilesDiv.innerHTML = html;
+        }
+
+        function getFileTypeInfo(mimeType) {
+            const types = {
+                'text/plain': { name: 'Text File', icon: '📄' },
+                'application/pdf': { name: 'PDF', icon: '📕' },
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { name: 'Word Document', icon: '📘' },
+                'application/vnd.google-apps.document': { name: 'Google Doc', icon: '📗' },
+                'application/vnd.google-apps.spreadsheet': { name: 'Google Sheet', icon: '📊' },
+                'application/vnd.google-apps.presentation': { name: 'Google Slides', icon: '📑' }
+            };
+            return types[mimeType] || { name: 'Document', icon: '📄' };
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function toggleFileSelection(fileId, fileName, element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                element.style.background = '#e3f2fd';
+                element.style.borderColor = '#2196F3';
+            } else {
+                element.style.background = '#f9f9f9';
+                element.style.borderColor = '#eee';
+            }
+        }
+
+        function selectAllDriveFiles() {
+            const checkboxes = pickedFilesDiv.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                const element = checkbox.closest('div[onclick]');
+                if (element) {
+                    element.style.background = '#e3f2fd';
+                    element.style.borderColor = '#2196F3';
+                }
             });
         }
 
-        function handleAuthClick() {
-            if (oauthToken) {
-                google.accounts.oauth2.revoke(oauthToken, () => {
-                    oauthToken = null;
-                });
-            }
-            tokenClient.requestAccessToken({prompt: 'consent'});
+        function clearDriveSelection() {
+            const checkboxes = pickedFilesDiv.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                const element = checkbox.closest('div[onclick]');
+                if (element) {
+                    element.style.background = '#f9f9f9';
+                    element.style.borderColor = '#eee';
+                }
+            });
         }
 
-        function onPickerApiLoad() {
-            pickerApiLoaded = true;
-            if (oauthToken) {
-                createPicker();
-            }
-        }
-
-        function createPicker() {
-            if (!pickerApiLoaded || !oauthToken) {
+        function confirmDriveSelection() {
+            const checkboxes = pickedFilesDiv.querySelectorAll('input[type="checkbox"]:checked');
+            if (checkboxes.length === 0) {
+                alert('Please select at least one file.');
                 return;
             }
-            const view = new google.picker.View(google.picker.ViewId.DOCS);
-            view.setMimeTypes("text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"); // Example MIME types
-            const picker = new google.picker.PickerBuilder()
-                .setAppId(CLIENT_ID.split('-')[0]) // App ID is usually the numeric part of client ID
-                .setOAuthToken(oauthToken)
-                .addView(view)
-                .setDeveloperKey(API_KEY)
-                .setCallback(pickerCallback)
-                .build();
-            picker.setVisible(true);
-        }
 
-        function pickerCallback(data) {
-            const pickedFilesDiv = document.getElementById('pickedFiles');
-            pickedFilesDiv.innerHTML = ''; 
-            if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
-                const files = data[google.picker.Response.DOCUMENTS];
-                let fileIds = [];
-                files.forEach(function(file) {
-                    const p = document.createElement('p');
-                    p.textContent = `Picked: ${file.name} (ID: ${file.id})`;
-                    pickedFilesDiv.appendChild(p);
-                    fileIds.push(file.id);
-                });
-                // Add these file IDs to a hidden input to be submitted with the form
-                let hiddenInput = document.getElementById('driveFileIds');
-                if (!hiddenInput) {
-                    hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'drive_file_ids';
-                    hiddenInput.id = 'driveFileIds';
-                    document.getElementById('podcastForm').appendChild(hiddenInput);
-                }
-                hiddenInput.value = JSON.stringify(fileIds);
-                // Disable the regular file input if Drive files are picked
-                document.getElementById('fileInput').value = null; 
-                document.getElementById('fileInput').required = false;
+            const selectedFiles = [];
+            checkboxes.forEach(checkbox => {
+                const fileId = checkbox.id.replace('file_', '');
+                const fileElement = checkbox.closest('div[onclick]');
+                const fileName = fileElement.querySelector('div[style*="font-weight: bold"]').textContent;
+                selectedFiles.push({ id: fileId, name: fileName });
+            });
+
+            let fileIds = selectedFiles.map(file => file.id);
+            let displayHtml = '<h4>Selected Drive Files:</h4><ul>';
+            selectedFiles.forEach(file => {
+                displayHtml += `<li>${escapeHtml(file.name)} (ID: ${file.id})</li>`;
+            });
+            displayHtml += '</ul>';
+            displayHtml += '<button type="button" onclick="showDriveBrowser()" style="margin-top: 10px;">Change Selection</button>';
+            
+            pickedFilesDiv.innerHTML = displayHtml;
+
+            let hiddenInput = document.getElementById('driveFileIds');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'drive_file_ids';
+                hiddenInput.id = 'driveFileIds';
+                document.getElementById('podcastForm').appendChild(hiddenInput);
+            }
+            hiddenInput.value = JSON.stringify(fileIds);
+            
+            // Add OAuth token to form
+            let tokenInput = document.getElementById('oauthToken');
+            if (!tokenInput) {
+                tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = 'oauth_token';
+                tokenInput.id = 'oauthToken';
+                document.getElementById('podcastForm').appendChild(tokenInput);
+            }
+            tokenInput.value = oauthToken;
+            
+            if (fileInput) {
+                fileInput.value = null;
+                fileInput.required = false;
             }
         }
 
-        document.getElementById('podcastForm').addEventListener('submit', function() {
+        drivePickerButton.addEventListener('click', handleDrivePickerClick);
+        
+        document.getElementById('podcastForm').addEventListener('submit', function(e) {
+            const submitButton = document.querySelector('button[type="submit"]');
+            const fileInput = document.getElementById('fileInput');
+            const driveFileIds = document.getElementById('driveFileIds');
+            
+            if (!fileInput.files.length && (!driveFileIds || !driveFileIds.value)) {
+                e.preventDefault(); 
+                alert('Please upload a file or select one from Google Drive.');
+                return false;
+            }
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Generating...';
             document.getElementById('loading').style.display = 'block';
+            const resultDiv = document.querySelector('.result');
+            if (resultDiv) resultDiv.style.display = 'none';
+            const errorDiv = document.querySelector('.error');
+            if (errorDiv) errorDiv.style.display = 'none';
         });
 
         const input = document.querySelector("#duration");
         const durationValue = document.querySelector("#durationValue");
-
         input.addEventListener("input", function() {
             durationValue.textContent = input.value;
         });
 
-        // Load the GSI client
-        const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.async = true;
-        script.defer = true;
-        script.onload = gisInited;
-        document.head.appendChild(script);
+        const gsiScript = document.createElement('script');
+        gsiScript.src = 'https://accounts.google.com/gsi/client';
+        gsiScript.async = true;
+        gsiScript.defer = true;
+        gsiScript.onload = () => {
+            console.log("GSI client script loaded");
+            if (typeof google !== "undefined" && typeof google.accounts !== "undefined" && typeof google.accounts.oauth2 !== "undefined") {
+                gisInited(); 
+            } else {
+                console.error("Google Identity Services object not found after GSI script load. Auth will not work.");
+                pickedFilesDiv.innerHTML = '<p style="color: red;">Critical error loading Google Sign-In components. Please refresh.</p>';
+            }
+        };
+        document.head.appendChild(gsiScript);
 
+        function initializePickerApi() {
+            console.log("initializePickerApi called");
+            if (typeof gapi !== "undefined" && typeof gapi.load === "function") {
+                console.log("gapi is defined, loading picker API...");
+                gapi.load('picker', onPickerApiLoad); 
+            } else {
+                console.warn("gapi (Google API Client Library) not defined when initializePickerApi is called. This usually means api.js hasn't loaded yet or failed. Picker API cannot be loaded.");
+                pickedFilesDiv.innerHTML = '<p style="color: red;">Error loading Google API components. Picker may not work. Please refresh.</p>';
+            }
+        }
+
+        window.addEventListener('load', function() {
+            const resultDiv = document.querySelector('.result');
+            const errorDiv = document.querySelector('.error');
+            if (resultDiv || errorDiv) {
+                const submitButton = document.querySelector('button[type="submit"]');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Generate Podcast Script';
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>

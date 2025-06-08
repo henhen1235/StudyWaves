@@ -1,4 +1,3 @@
-# flashcards/forms.py
 from django import forms
 from .models import FlashcardSet
 
